@@ -15,22 +15,22 @@ operon_finder=./operon_fidner_v3.py
 #$1 = samples
 #$2 = max intron size
 
-##Minimap2 alingment of the reads
-# echo "Performing mapping of the reads..."
-# for i in $1 ; do for x in $2 ; do \
-#  output_bam="${WORKDIR}/alignments/FAX17881_1_${i}_reads_aln_sorted_v${x}.bam"
-#     if [ -f "$output_bam" ]; then
-#         echo "BAM file with -G ${x} for $i already exists. Skipping..."
-#         continue
-#     fi
-#  minimap2 -t 8 -ax splice \
-#   -G ${x} ${WORKDIR}/index/genome_index.mmi \
-#   ${WORKDIR}/processed_reads/FAX17881_1_${i}_full_length_reads.clean.fq > ${i}_reads_aln_v${x}.sam ; \
-#  samtools view ${i}_reads_aln_v${x}.sam -O BAM -o ${i}_reads_aln_v${x}.bam ; \
-#  seqkit bam -j 8 -q 40 -x - ${i}_reads_aln_v${x}.bam | samtools sort -@ 8 -O BAM -o $output_bam ;
-#  samtools index $output_bam ; \
-#  rm ${i}_reads_aln_v${x}.sam ; \
-# done ; done
+#Minimap2 alingment of the reads
+echo "Performing mapping of the reads..."
+for i in $1 ; do for x in $2 ; do \
+  output_bam="${WORKDIR}/alignments/FAX17881_1_${i}_reads_aln_sorted_v${x}.bam"
+    if [ -f "$output_bam" ]; then
+        echo "BAM file with -G ${x} for $i already exists. Skipping..."
+        continue
+    fi
+  minimap2 -t 8 -ax splice \
+    -G ${x} ${WORKDIR}/index/genome_index.mmi \
+    ${WORKDIR}/processed_reads/FAX17881_1_${i}_full_length_reads.clean.fq > ${i}_reads_aln_v${x}.sam ; \
+  samtools view ${i}_reads_aln_v${x}.sam -O BAM -o ${i}_reads_aln_v${x}.bam ; \
+  seqkit bam -j 8 -q 40 -x - ${i}_reads_aln_v${x}.bam | samtools sort -@ 8 -O BAM -o $output_bam ;
+  samtools index $output_bam ; \
+  rm ${i}_reads_aln_v${x}.sam ; \
+ done ; done
 
 #Stringtie v3
 echo "Executing non-guide StringTie..."
