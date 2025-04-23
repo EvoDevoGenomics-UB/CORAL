@@ -1,0 +1,49 @@
+---
+## General pipeline parameters:
+# Threads:
+threads: 4
+# Name of the Results folder inside the working directory (IMPORTAT to include last "/"):
+pipeline: "OdiBAR_annotation_DEF/"
+# ABSOLUTE path to working directory (IMPORTAT to include last "/"):
+workdir_top: "/data2/cristian/ntorres2/LongRead_RNAseq/Workspaces/"
+
+## Pipeline-specific parameters:
+# Absolute directory to the cDNA reads in fastq(.fq) format
+data_dir: "/data2/cristian/ntorres2/LongRead_RNAseq/Workspaces/BAR_longreads_C05C06/processed_reads/FAX17881_1_"
+data_sufix: "_full_length_reads.clean.fq"
+
+#Nameing of the .fq files (it uses the '_' as separator: treatments_stages_replicates.fq)
+specie: ["OdiBAR"]
+samples: ["BP01","BP02","BP03","BP04","BP05","BP06","BP07","BP08","BP09","BP10new","BP11","BP12"]
+
+# Process cDNA reads using pychopper, turn off for direct RNA:
+#run_pychopper: True
+# Post pychopper quality filter parameters of seqkit
+#seqkitQ: 7 #Q parameter
+#min_seqkit: 200 #minimum bp lenght
+
+# Input genome
+genome_fasta: "/home/cristian/ntorres/LongRead_RNAseq/ncbi_genome_lampetra_fluviatilis/XENTR_9.1_genome.fa"
+
+# Extra option passed to minimap2 when generating index
+minimap_index_opts: "-k14"
+
+# Extra options passed to minimap2 when aligning the reads
+minimap2_opts: "-ax splice"
+minimap2_max_intron: "10k"
+minimum_mapping_quality: 40
+
+# Options passed to stringtie:
+stringtie_opts: "-M 0.75 -j 2 -a 15 "
+stringtie_cov: 1.5
+stringtie_freq: 0.2
+
+#Operon finder options:
+operon_threshold: 1.25
+
+# BUSCO options
+lineages: metazoa_odb10
+
+###
+#comand to execute it: snakemake --use-conda --snakefile compact-genome-annotation.smk --cores 8
+##

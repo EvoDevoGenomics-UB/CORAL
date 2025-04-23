@@ -1,0 +1,28 @@
+channels:
+    - conda-forge
+    - bioconda
+    - nanoporetech
+dependencies:
+    - python
+    - minimap2
+    - samtools>=1.9
+#    - bedtools
+    - gffutils
+    - gffread
+    - seqkit
+    - stringtie>=3.0
+    - hmmer
+    - busco==5.8.2
+#    - pychopper
+#    - "nanoporetech::pychopper"
+    - pandas
+#    - seaborn
+#    - requests
+#    - csvtk
+#    - stringtie
+#    - gffcompare
+#    - curl
+#    - hmmer==3.3
+#    - spoa
+#    - pyfasta
+#    - pyranges
