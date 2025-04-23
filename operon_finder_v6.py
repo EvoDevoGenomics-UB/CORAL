@@ -21,18 +21,21 @@ parser.add_argument(
     "Inner transcript coverage should be equal or bigger than "
     "(operon-coverage * THRESHOLD) [default: 1.25]."
 )
-parse.add_argument(
+parser.add_argument(
     "-o","--output",
     #required=True,
-    default = os.path.splitext(args.file)[0],
-    help="Prefix of the output files."
+    help="Prefix of the output files [default: input base name]."
 )
 # Parse arguments
 args = parser.parse_args()
 # Extract values
 gtf_file = args.file
 threshold = args.threshold
-out_prefix = args.output
+# If no output was specified, use the input base name
+if args.output:
+    out_prefix = args.output
+else:
+    out_prefix = os.path.splitext(gtf_file)[0]
 
 # Ensure the file exists
 if not os.path.isfile(gtf_file):
@@ -40,7 +43,7 @@ if not os.path.isfile(gtf_file):
     sys.exit(1)
 
 # Create a database from the GTF file (stored in memory)
-db_filename = out_prefix + "_annotation_v6.t"+ str(threshold) +".db"
+db_filename = os.path.splitext(gtf_file)[0] + "_annotation_v6.t"+ str(threshold) +".db"
 db = gffutils.create_db(
     gtf_file,
     dbfn=db_filename,
