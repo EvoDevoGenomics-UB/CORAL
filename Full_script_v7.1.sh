@@ -139,6 +139,7 @@ for x in $2 ; do for cov in 1.5 ; do for final in clean-noOPRNs ; do
     #OdiBAR_LRannot_v${x}_c${cov}_mergeCLEAN.${VERSION}.gtf
     python $longest_filter $file_name.gtf ; \
     $gffread_path -g $GENOME -w $final_fasta_file ${file_name}_longest_trans_only.gtf ; \
+    echo "Fasta file created." ; \
 done ; done ; done
 
 #Obtaining coverage of final annotation
