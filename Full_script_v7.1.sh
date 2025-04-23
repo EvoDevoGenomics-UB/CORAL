@@ -65,7 +65,7 @@ for i in $1 ; do for x in $2 ; do
             echo "Operon search already done for ${i}_v${x}_cov${cov}. Skipping..."
             continue
         fi
-        python ${operon_finder} -f ${sample_gtf}.gtf --threshold ${THRESHOLD}; \
+        python ${operon_finder} -f ${sample_gtf}.gtf --threshold ${THRESHOLD} ; \
     done ; \
 done ; done
 
@@ -75,7 +75,7 @@ for i in $1 ; do for x in $2 ; do for cov in 1.5 ; do
     for type in Operons OperonGenes opCLEAN ; do \
         sample_gtf=${i}_no_assembled_v${x}_c${cov}_f0.2
         gtf_file=${sample_gtf}_${type}_v6.t${THRESHOLD}
-        if [ -f "$gtf_file.${VERSION}.clean.gtf" ]; then
+        if [ -f "$gtf_file.${VERSION}.clean.gtf" ] ; then
             echo "Already done for $type file of ${i}_v${x}_cov${cov}. Skipping..."
             continue
         fi
