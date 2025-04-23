@@ -21,12 +21,18 @@ parser.add_argument(
     "Inner transcript coverage should be equal or bigger than "
     "(operon-coverage * THRESHOLD) [default: 1.25]."
 )
-
+parse.add_argument(
+    "-o","--output",
+    #required=True,
+    default = os.path.splitext(args.file)[0],
+    help="Prefix of the output files."
+)
 # Parse arguments
 args = parser.parse_args()
 # Extract values
 gtf_file = args.file
 threshold = args.threshold
+out_prefix = args.output
 
 # Ensure the file exists
 if not os.path.isfile(gtf_file):
@@ -34,7 +40,7 @@ if not os.path.isfile(gtf_file):
     sys.exit(1)
 
 # Create a database from the GTF file (stored in memory)
-db_filename = os.path.splitext(gtf_file)[0] + "_annotation_v6.t"+ str(threshold) +".db"
+db_filename = out_prefix + "_annotation_v6.t"+ str(threshold) +".db"
 db = gffutils.create_db(
     gtf_file,
     dbfn=db_filename,
@@ -46,7 +52,7 @@ db = gffutils.create_db(
 print(f"File '{db_filename}' created.")
 
 # Define output file
-output_file = os.path.splitext(gtf_file)[0] + "_operons_found_v6.t"+ str(threshold) +".tsv"
+output_file = out_prefix + "_operons_found_v6.t"+ str(threshold) +".tsv"
 
 # Dictionary to store transcripts per chromosome
 chrom_transcripts = defaultdict(list)
@@ -151,9 +157,9 @@ for transcript in db.features_of_type("transcript"):
             gene_transcripts.append(transcript.id)
 
 # Define output GTF filenames
-operon_gtf_file = os.path.splitext(gtf_file)[0] + "_Operons_v6.t" + str(threshold) + ".gtf"
-contained_gtf_file = os.path.splitext(gtf_file)[0] + "_OperonGenes_v6.t" + str(threshold) + ".gtf"
-clean_gtf_file = os.path.splitext(gtf_file)[0] + "_opCLEAN_v6.t" + str(threshold) + ".gtf"
+operon_gtf_file = out_prefix + "_Operons_v6.t" + str(threshold) + ".gtf"
+contained_gtf_file = out_prefix + "_OperonGenes_v6.t" + str(threshold) + ".gtf"
+clean_gtf_file = out_prefix + "_opCLEAN_v6.t" + str(threshold) + ".gtf"
 
 # Write operon transcripts to GTF
 with open(operon_gtf_file, "w") as operon_out:
