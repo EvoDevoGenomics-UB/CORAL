@@ -36,7 +36,8 @@ rule all:
             specie=config["specie"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("busco_analysis/BUSCO_trans_{specie}_LRannot_v{intron}_OFv6t{threshold}_andOPRNs",
             specie=config["specie"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        "busco_analysis/BUSCO_results_all_summaries"
+        expand("busco_analysis/BUSCO_results_all_summaries_{specie}_v{intron}_OFv6t{threshold}",
+            specie=config["specie"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"])
 
 rule dump_versions:
     output: ver = "versions.txt"
@@ -136,12 +137,17 @@ rule do_operon_annotations:
         expand("operon_finder_results/{specie}_{sample}_v{intron}_opCLEAN_v6.t{threshold}.clean.gtf", specie=config["specie"], sample=config["samples"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("annotations/Merge_OPRNs-OpGs_{specie}_LRannot_v{intron}_OFv6t{threshold}.sorted.gtf", specie=config["specie"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"])
 
+ruleorder: run_operon_finder > run_gtf_sanatizing
+
 #Python script operon_finder
 rule run_operon_finder:
     input:
         gtf = rules.run_non_assembly_stringtie.output.gtf
     output:
-        file = "operon_finder_results/{specie}_{sample}_v{intron}_operons_found_v6.t{threshold}.tsv"
+        file = "operon_finder_results/{specie}_{sample}_v{intron}_operons_found_v6.t{threshold}.tsv",
+        gtfOPRNs = "operon_finder_results/{specie}_{sample}_v{intron}_Operons_v6.t{threshold}.gtf",
+        gtfOpGs = "operon_finder_results/{specie}_{sample}_v{intron}_OperonGenes_v6.t{threshold}.gtf",
+        gtfCLEAN = "operon_finder_results/{specie}_{sample}_v{intron}_opCLEAN_v6.t{threshold}.gtf"
     params:
         name = "operon_finder_results/{specie}_{sample}_v{intron}",
         threshold = config["operon_threshold"]
@@ -151,29 +157,39 @@ rule run_operon_finder:
     shell:"""
     mkdir -p operon_finder_results
     (python {SNAKEDIR}/scripts/operon_finder_v6.py -f {input.gtf} --threshold {params.threshold} -o {params.name}) 2> {log}
+    touch {output}
     """
-    #touch {output.file}
 
 #Sanatize format if necessary
 rule run_gtf_sanatizing:
     input:
+        gtfOPRNs = "operon_finder_results/{specie}_{sample}_v{intron}_Operons_v6.t{threshold}.gtf",
+        gtfOpGs = "operon_finder_results/{specie}_{sample}_v{intron}_OperonGenes_v6.t{threshold}.gtf",
+        gtfCLEAN = "operon_finder_results/{specie}_{sample}_v{intron}_opCLEAN_v6.t{threshold}.gtf"
     output:
         gtfOPRNs = "operon_finder_results/{specie}_{sample}_v{intron}_Operons_v6.t{threshold}.clean.gtf",
         gtfOpGs = "operon_finder_results/{specie}_{sample}_v{intron}_OperonGenes_v6.t{threshold}.clean.gtf",
         gtfCLEAN = "operon_finder_results/{specie}_{sample}_v{intron}_opCLEAN_v6.t{threshold}.clean.gtf",
     params:
-        prefix = rules.run_operon_finder.params.name ,
-        sufix = "_v6.t{threshold}"
+        prefix = rules.run_operon_finder.params.name
     conda: env_file
     shell:"""
-    for type in Operons OperonGenes opCLEAN ; do
-        awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
-        else print $0}}\' {params.prefix}$type{params.sufix}.gtf > {params.prefix}$type{params.sufix}.clean.tmp.gtf; \
-        gffread --sort-alpha -F -T -o {params.prefix}$type{params.sufix}.clean.gtf {params.prefix}$type{params.sufix}.clean.tmp.gtf ; \
-        rm {params.prefix}$type{params.sufix}.clean.tmp.gtf ; \
-        touch {output} ; \
-    done
+    awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
+    else print $0}}\' {input.gtfOPRNs} > {input.gtfOPRNs}.tmp ; \
+    gffread --sort-alpha -F -T -o {output.gtfOPRNs} {input.gtfOPRNs}.tmp
+
+    awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
+    else print $0}}\' {input.gtfOpGs} > {input.gtfOpGs}.tmp ; \
+    gffread --sort-alpha -F -T -o {output.gtfOpGs} {input.gtfOpGs}.tmp
+
+    awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
+    else print $0}}\' {input.gtfCLEAN} > {input.gtfCLEAN}.tmp ; \
+    gffread --sort-alpha -F -T -o {output.gtfCLEAN} {input.gtfCLEAN}.tmp
+
+    rm {params.prefix}*.tmp
+    touch {output}
     """
+
 #Create oepron and operon-contained genes annotations
 rule run_operon_annotation:
     input:
@@ -243,8 +259,15 @@ rule do_busco_analyses:
             specie=config["specie"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("busco_analysis/BUSCO_trans_{specie}_LRannot_v{intron}_OFv6t{threshold}_andOPRNs",
             specie=config["specie"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        "busco_analysis/BUSCO_results_all_summaries"
-        
+         expand("busco_analysis/BUSCO_trans_{specie}_LRannot_v{intron}_OFv6t{threshold}_noOPRNs_longest_trans_only",
+            specie=config["specie"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+        expand("busco_analysis/BUSCO_trans_{specie}_LRannot_v{intron}_OFv6t{threshold}_noOPRNs",
+            specie=config["specie"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+        expand("busco_analysis/BUSCO_trans_{specie}_LRannot_v{intron}_OFv6t{threshold}_andOPRNs",
+            specie=config["specie"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+        expand("busco_analysis/BUSCO_results_all_summaries_{specie}_v{intron}_OFv6t{threshold}",
+            specie=config["specie"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"])
+       
 rule run_longest_trans_filter:
     input:
         gtf = rules.run_final_annotation.output.noOPRNs
@@ -303,9 +326,9 @@ rule run_busco_analyses:
     """
 rule busco_plot:
     input:
-        rules.busco_download_lineage.output
+        dirs = rules.run_busco_analyses.output
     output:
-        out_dir = directory("busco_analysis/BUSCO_results_all_summaries")
+        out_dir = directory("busco_analysis/BUSCO_results_all_summaries_{specie}_v{intron}_OFv6t{threshold}")
     conda: env_file
     shell:"""
         mkdir -p {output.out_dir};
@@ -342,5 +365,3 @@ rule run_final_operon_search:
     shell:"""
     (python {SNAKEDIR}/scripts/operon_finder_v6.py -f {input.gtf} --threshold {params.threshold} -o {output.name}) 2> {log}
     """
-
-    
