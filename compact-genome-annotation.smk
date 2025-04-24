@@ -82,22 +82,33 @@ rule run_minimap2:
         index = "index/{specie}_genome_index.mmi",
         fastq = config["data_dir"] + "{sample}" + config["data_sufix"]
     output:
-        bam = "alignments/{specie}_{sample}_reads_aln_v{intron}.sorted.bam"
+        sam = "alignments/{specie}_{sample}_reads_aln_v{intron}.sam"
     params:
         name = "alignments/{specie}_{sample}_reads_aln_v{intron}",
         opts = config["minimap2_opts"],
-        max_intron = config["minimap2_max_intron"],
-        qual = config["minimum_mapping_quality"]
+        max_intron = config["minimap2_max_intron"]
     threads: config["threads"]
     conda: env_file
     log: "logs/{specie}_{sample}_v{intron}_minimap2_run.log"
     shell: """
-    (minimap2 -t {threads} {params.opts} -G {params.max_intron} {params.opts} {input.index} {input.fastq} > {params.name}.sam
-    head -2 {params.name}.sam ) 2> {log}
-    samtools view {params.name}.sam -O BAM -o {params.name}.bam
-    seqkit bam -j 8 -q {params.qual} -x - {params.name}.bam | samtools sort -@ 8 -O BAM -o {output.bam}
-    samtools index {output.bam}
-    rm {params.name}.sam
+    (minimap2 -t {threads} {params.opts} -G {params.max_intron} {input.index} {input.fastq} > {output.sam}
+    head -2 {output.sam} ) 2> {log}
+    """
+rule run_samtools:
+    input:
+        sam = "alignments/{specie}_{sample}_reads_aln_v{intron}.sam"
+    output:
+        bam = "alignments/{specie}_{sample}_reads_aln_v{intron}.sorted.bam"
+    params:
+        name = "alignments/{specie}_{sample}_reads_aln_v{intron}",
+        qual = config["minimum_mapping_quality"]
+    threads: config["threads"]
+    conda: env_file
+    shell: """
+    samtools view {input.sam} -@ {threads} -O BAM -o {params.name}.bam ; \
+    seqkit bam -j {threads} -q {params.qual} -x - {params.name}.bam | samtools sort -@ {threads} -O BAM -o {output.bam} ; \
+    samtools index {output.bam} ; \
+    rm {params.name}.bam
     """
 rule run_aling_stats:
     input:
@@ -190,7 +201,7 @@ rule run_gtf_sanatizing:
     touch {output}
     """
 
-#Create oepron and operon-contained genes annotations
+#Create operon and operon-contained genes annotations
 rule run_operon_annotation:
     input:
         gtfsoperons = expand("operon_finder_results/{specie}_{sample}_v{intron}_Operons_v6.t{threshold}.clean.gtf", 
