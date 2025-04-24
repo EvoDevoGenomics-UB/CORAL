@@ -97,12 +97,12 @@ rule run_minimap2_samtools:
     echo \"{params.name}.sam created\"
     samtools view {params.name}.sam -@ {threads} -O BAM -o {params.name}.bam
     echo \"{params.name}.bam created\"
-    samtools view {params.name}.sam -q {params.qual} -@ {threads} -b -o {params.name}.clean.bam
-    echo \"{params.name}.clean.bam created\"
+    seqkit bam -j {threads} -q {params.qual} -x > {params.name}.clean.sam
+    echo \"{params.name}.clean.sam created\"
     rm {params.name}.sam
-    samtools sort -@ {threads} -O BAM -o {output.bam} {params.name}.clean.bam
+    samtools sort -@ {threads} -O BAM -o {output.bam} {params.name}.clean.sam
     samtools index {output.bam}
-    rm {params.name}.clean.bam
+    rm {params.name}.clean.sam
     """
 rule run_aling_stats:
     input:
