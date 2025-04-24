@@ -97,7 +97,7 @@ rule run_minimap2_samtools:
     echo \"{params.name}.sam created\"
     samtools view {params.name}.sam -@ {threads} -O BAM -o {params.name}.bam
     echo \"{params.name}.bam created\"
-    seqkit bam -j {threads} -q {params.qual} -x > {params.name}.clean.sam
+    seqkit bam -j {threads} -q {params.qual} -x {params.name}.bam > {params.name}.clean.sam
     echo \"{params.name}.clean.sam created\"
     rm {params.name}.sam
     samtools sort -@ {threads} -O BAM -o {output.bam} {params.name}.clean.sam
