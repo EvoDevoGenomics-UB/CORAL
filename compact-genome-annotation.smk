@@ -77,38 +77,32 @@ rule build_minimap_index:
     shell:"""
         minimap2 -t {threads} {params.opts} -I 1000G -d {output.index} {input.genome}
     """
-rule run_minimap2:
+rule run_minimap2_samtools:
     input:
         index = "index/{specie}_genome_index.mmi",
         fastq = config["data_dir"] + "{sample}" + config["data_sufix"]
     output:
-        sam = "alignments/{specie}_{sample}_reads_aln_v{intron}.sam"
+        bam = "alignments/{specie}_{sample}_reads_aln_v{intron}.sorted.bam"
     params:
         name = "alignments/{specie}_{sample}_reads_aln_v{intron}",
         opts = config["minimap2_opts"],
-        max_intron = config["minimap2_max_intron"]
+        max_intron = config["minimap2_max_intron"],
+        qual = config["minimum_mapping_quality"]
     threads: config["threads"]
     conda: env_file
     log: "logs/{specie}_{sample}_v{intron}_minimap2_run.log"
     shell: """
-    (minimap2 -t {threads} {params.opts} -G {params.max_intron} {input.index} {input.fastq} > {output.sam}
-    head -2 {output.sam} ) 2> {log}
-    """
-rule run_samtools:
-    input:
-        sam = "alignments/{specie}_{sample}_reads_aln_v{intron}.sam"
-    output:
-        bam = "alignments/{specie}_{sample}_reads_aln_v{intron}.sorted.bam"
-    params:
-        name = "alignments/{specie}_{sample}_reads_aln_v{intron}",
-        qual = config["minimum_mapping_quality"]
-    threads: config["threads"]
-    conda: env_file
-    shell: """
-    samtools view {input.sam} -@ {threads} -O BAM -o {params.name}.bam ; \
-    seqkit bam -j {threads} -q {params.qual} -x - {params.name}.bam | samtools sort -@ {threads} -O BAM -o {output.bam} ; \
-    samtools index {output.bam} ; \
-    rm {params.name}.bam
+    (minimap2 -t {threads} {params.opts} -G {params.max_intron} {params.opts} {input.index} {input.fastq} > {params.name}.sam ; \
+    head -2 {params.name}.sam ) 2> {log}
+    echo \"{params.name}.sam created\"
+    samtools view {params.name}.sam -@ {threads} -O BAM -o {params.name}.bam
+    echo \"{params.name}.bam created\"
+    samtools view {params.name}.sam -q {params.qual} -@ {threads} -b -o {params.name}.clean.bam
+    echo \"{params.name}.clean.bam created\"
+    rm {params.name}.sam
+    samtools sort -@ {threads} -O BAM -o {output.bam} {params.name}.clean.bam
+    samtools index {output.bam}
+    rm {params.name}.clean.bam
     """
 rule run_aling_stats:
     input:
@@ -128,13 +122,12 @@ rule run_non_assembly_stringtie:
     output:
         gtf = "sample_annotations/{specie}_{sample}_no_assembled_v{intron}.gtf"
     params:
-        scov = config["stringtie_cov"]*2 ,
         opts = config["stringtie_opts"]
     conda: env_file
     threads: config["threads"]
     shell:"""
     mkdir -p sample_annotations
-    stringtie --rf -L -R -p {threads} {params.opts} -s {params.scov} \
+    stringtie --rf -L -R -p {threads} {params.opts} \
     -o {output.gtf} {input.bam} ; \
     echo "Stringtie no-guide no-assembly gtf created: {output.gtf}"
     """
