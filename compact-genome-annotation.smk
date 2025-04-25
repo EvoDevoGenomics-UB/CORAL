@@ -347,11 +347,11 @@ rule busco_plot:
 #Obtaining coverage of final annotation
 rule run_recover_coverage:
     input:
-        gtf = rules.run_final_annotation.output.noOPRNs ,
+        gtf = rules.run_final_annotation.output.andOPRNs ,
         bams = expand("alignments/{specie}_{sample}_reads_aln_v{intron}.sorted.bam", 
             specie=config["specie"], sample=config["samples"], intron=config["minimap2_max_intron"])
     output:
-        gtfFinal = "annotations/{specie}_LRannot_v{intron}_OFv6t{threshold}_StringtieMerge.clean-noOPRNs.counts.gtf"
+        gtfFinal = "annotations/{specie}_LRannot_v{intron}_OFv6t{threshold}_StringtieMerge.clean-and-OPRNs.counts.gtf"
     conda: env_file
     shell: """
     stringtie -G {input.gtf} -e -o {output.gtfFinal} {input.bams}
@@ -361,7 +361,7 @@ rule run_final_operon_search:
     input:
         gtf = rules.run_recover_coverage.output.gtfFinal
     output:
-        name = "operon_finder_results/{specie}_LRannot_v{intron}_OFv6t{threshold}_StringtieMerge.clean-noOPRNs.counts"
+        name = "operon_finder_results/{specie}_LRannot_v{intron}_OFv6t{threshold}_StringtieMerge.clean-and-OPRNs.counts"
     params:
         threshold = config["operon_threshold"]
     log: "logs/{specie}_LRannot_v{intron}_OFv6t{threshold}_operon_finder_run_FINAL.log"
