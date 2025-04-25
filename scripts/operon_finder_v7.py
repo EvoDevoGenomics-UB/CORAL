@@ -43,7 +43,7 @@ if not os.path.isfile(gtf_file):
     sys.exit(1)
 
 # Create a database from the GTF file (stored in memory)
-db_filename = os.path.splitext(gtf_file)[0] + "_annotation_v6.t"+ str(threshold) +".db"
+db_filename = os.path.splitext(gtf_file)[0] + "_annotation_v7.t"+ str(threshold) +".db"
 db = gffutils.create_db(
     gtf_file,
     dbfn=db_filename,
@@ -55,7 +55,7 @@ db = gffutils.create_db(
 print(f"File '{db_filename}' created.")
 
 # Define output file
-output_file = out_prefix + "_operons_found_v6.t"+ str(threshold) +".tsv"
+output_file = out_prefix + "_operons_found_v7.t"+ str(threshold) +".tsv"
 
 # Dictionary to store transcripts per chromosome
 chrom_transcripts = defaultdict(list)
@@ -160,9 +160,9 @@ for transcript in db.features_of_type("transcript"):
             gene_transcripts.append(transcript.id)
 
 # Define output GTF filenames
-operon_gtf_file = out_prefix + "_Operons_v6.t" + str(threshold) + ".gtf"
-contained_gtf_file = out_prefix + "_OperonGenes_v6.t" + str(threshold) + ".gtf"
-containedALL_gtf_file = out_prefix + "_OperonGenesALL_v6.t" + str(threshold) + ".gtf"
+operon_gtf_file = out_prefix + "_Operons_v7.t" + str(threshold) + ".gtf"
+contained_gtf_file = out_prefix + "_OperonGenes_v7.t" + str(threshold) + ".gtf"
+containedALL_gtf_file = out_prefix + "_OperonGenesALL_v7.t" + str(threshold) + ".gtf"
 clean_gtf_file = out_prefix + "_opCLEAN_v6.t" + str(threshold) + ".gtf"
 
 # Write operon transcripts to GTF
@@ -183,12 +183,12 @@ with open(contained_gtf_file, "w") as contained_out:
         for feature in db.children(transcript_id, featuretype='exon', order_by='start'):
             contained_out.write(str(feature) + "\n")
 # Write ALL contained gene transcripts to GTF
-with open(containedALL_gtf_file, "w") as contained_out:
+with open(containedALL_gtf_file, "w") as containedALL_out:
     for transcript_id in gene_transcripts:
         transcript_feature = db[transcript_id]
-        contained_out.write(str(transcript_feature) + "\n")
+        containedALL_out.write(str(transcript_feature) + "\n")
         for feature in db.children(transcript_id, featuretype='exon', order_by='start'):
-            contained_out.write(str(feature) + "\n")
+            containedALL_out.write(str(feature) + "\n")
 
 # Write Clean GTF no containgin OPRNs nor OpGenes
 with open(clean_gtf_file, "w") as clean_out:
