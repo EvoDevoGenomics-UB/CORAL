@@ -199,8 +199,4 @@ with open(clean_gtf_file, "w") as clean_out:
             for feature in db.children(transcript.id, featuretype='exon', order_by='start'):
                clean_out.write(str(feature) + "\n")
 
-print(f"GTF files saved: \n 
-    {operon_gtf_file} (operons) \n 
-    {contained_gtf_file} (non-overlaped contained genes) \n 
-    {containedALL_gtf_file} ( ALL contained genes) \n 
-    {clean_gtf_file} (clean)")
+print(f"GTF files saved: \n {operon_gtf_file} (operons) \n {contained_gtf_file} (non-overlaped contained genes) \n {containedALL_gtf_file} ( ALL contained genes) \n {clean_gtf_file} (clean)")
