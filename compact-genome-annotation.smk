@@ -294,7 +294,6 @@ rule busco_download_lineage:
     shell:"""
         busco --download {params.lineage} --download_path {output.lin_dir}
     """
-
 rule run_busco_analyses:
     input:
         lin_dir = rules.busco_download_lineage.output.lin_dir ,
@@ -342,7 +341,6 @@ rule run_recover_coverage:
     shell: """
     stringtie -G {input.gtf} -e -o {output.gtfFinal} {input.bams}
     """
-
 rule run_final_operon_search:
     input:
         gtf = rules.run_recover_coverage.output.gtfFinal
@@ -354,4 +352,31 @@ rule run_final_operon_search:
     conda: env_file
     shell:"""
     (python {SNAKEDIR}/scripts/operon_finder_v7.py -f {input.gtf} --threshold {params.threshold} -o {output.name}) 2> {log}
+    """
+
+#Comparing new annoatation againts reference one
+rule do_gffcompare:
+    input:
+        "Gffcompare_results"
+
+rule run_gffcompare:
+    input:
+        ref = config["reference_annot"] ,
+        gtf_longest = rules.run_longest_trans_filter.output.filtergtf ,
+        gtf_noOPRNs = rules.run_final_annotation.output.noOPRNs ,
+        gtf_andORPNs = rules.run_final_annotation.output.andOPRNs
+    output:
+        gffcmp_dir = directory("Gffcompare_results")
+    params:
+        prefix = "{specie}_LRannot_v{intron}_OFv7t{threshold}"
+    conda: env:file
+    shell:"""
+    if [[ {params.run} == "True" ]] ; then
+        mkdir -p {output.gffcmp_dir}
+        gffcompare -r {input.ref} {input.gtf_longest} -o ./Gffcompare_results/{params.prefix}_longest_trans
+        gffcompare -r {input.ref} {input.gtf_noOPRNs} -o ./Gffcompare_results/{params.prefix}_noOPRNs
+        gffcompare -r {input.ref} {input.gtf_andOPRNs} -o ./Gffcompare_results/{params.prefix}_andOPRNs
+    else
+        echo \"No reference annoation provided.\"
+    fi
     """
