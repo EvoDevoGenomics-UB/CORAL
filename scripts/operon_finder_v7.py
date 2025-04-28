@@ -43,7 +43,7 @@ if not os.path.isfile(gtf_file):
     sys.exit(1)
 
 # Create a database from the GTF file (stored in memory)
-db_filename = os.path.splitext(gtf_file)[0] + "_annotation_v6.t"+ str(threshold) +".db"
+db_filename = os.path.splitext(gtf_file)[0] + "_annotation_v7.t"+ str(threshold) +".db"
 db = gffutils.create_db(
     gtf_file,
     dbfn=db_filename,
@@ -55,7 +55,7 @@ db = gffutils.create_db(
 print(f"File '{db_filename}' created.")
 
 # Define output file
-output_file = out_prefix + "_operons_found_v6.t"+ str(threshold) +".tsv"
+output_file = out_prefix + "_operons_found_v7.t"+ str(threshold) +".tsv"
 
 # Dictionary to store transcripts per chromosome
 chrom_transcripts = defaultdict(list)
@@ -160,8 +160,9 @@ for transcript in db.features_of_type("transcript"):
             gene_transcripts.append(transcript.id)
 
 # Define output GTF filenames
-operon_gtf_file = out_prefix + "_Operons_v6.t" + str(threshold) + ".gtf"
-contained_gtf_file = out_prefix + "_OperonGenes_v6.t" + str(threshold) + ".gtf"
+operon_gtf_file = out_prefix + "_Operons_v7.t" + str(threshold) + ".gtf"
+contained_gtf_file = out_prefix + "_OperonGenes_v7.t" + str(threshold) + ".gtf"
+containedALL_gtf_file = out_prefix + "_OperonGenesALL_v7.t" + str(threshold) + ".gtf"
 clean_gtf_file = out_prefix + "_opCLEAN_v6.t" + str(threshold) + ".gtf"
 
 # Write operon transcripts to GTF
@@ -174,13 +175,20 @@ with open(operon_gtf_file, "w") as operon_out:
         for feature in db.children(operon_id, featuretype='exon', order_by='start'):
             operon_out.write(str(feature) + "\n")
 
-# Write contained gene transcripts to GTF
+# Write non-overlaped contained gene transcripts to GTF
 with open(contained_gtf_file, "w") as contained_out:
-    for transcript_id in gene_transcripts:
+    for transcript_id in contained_ids:
         transcript_feature = db[transcript_id]
         contained_out.write(str(transcript_feature) + "\n")
         for feature in db.children(transcript_id, featuretype='exon', order_by='start'):
             contained_out.write(str(feature) + "\n")
+# Write ALL contained gene transcripts to GTF
+with open(containedALL_gtf_file, "w") as containedALL_out:
+    for transcript_id in gene_transcripts:
+        transcript_feature = db[transcript_id]
+        containedALL_out.write(str(transcript_feature) + "\n")
+        for feature in db.children(transcript_id, featuretype='exon', order_by='start'):
+            containedALL_out.write(str(feature) + "\n")
 
 # Write Clean GTF no containgin OPRNs nor OpGenes
 with open(clean_gtf_file, "w") as clean_out:
@@ -191,4 +199,8 @@ with open(clean_gtf_file, "w") as clean_out:
             for feature in db.children(transcript.id, featuretype='exon', order_by='start'):
                clean_out.write(str(feature) + "\n")
 
-print(f"GTF files saved: \n {operon_gtf_file} (operons) \n {contained_gtf_file} (contained genes) \n {clean_gtf_file} (clean)")
+print(f"GTF files saved: \n 
+    {operon_gtf_file} (operons) \n 
+    {contained_gtf_file} (non-overlaped contained genes) \n 
+    {containedALL_gtf_file} ( ALL contained genes) \n 
+    {clean_gtf_file} (clean)")
