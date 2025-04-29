@@ -163,7 +163,7 @@ for transcript in db.features_of_type("transcript"):
 operon_gtf_file = out_prefix + "_Operons_v7.t" + str(threshold) + ".gtf"
 contained_gtf_file = out_prefix + "_OperonGenes_v7.t" + str(threshold) + ".gtf"
 containedALL_gtf_file = out_prefix + "_OperonGenesALL_v7.t" + str(threshold) + ".gtf"
-clean_gtf_file = out_prefix + "_opCLEAN_v6.t" + str(threshold) + ".gtf"
+clean_gtf_file = out_prefix + "_opCLEAN_v7.t" + str(threshold) + ".gtf"
 
 # Write operon transcripts to GTF
 with open(operon_gtf_file, "w") as operon_out:
