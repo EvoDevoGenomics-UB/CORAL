@@ -30,7 +30,7 @@ rule_all_input_list=["versions.txt",
         expand("busco_analysis/BUSCO_results_all_summaries_{specie}_v{intron}_OFv7t{threshold}",
             specie=config["specie"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"])
         ]
-if config["run_gffcomapre"] == "True" :
+if config["run_gffcomapre"] == True :
     rule_all_input_list.extend("Gffcompare_results")
 
 #Other files not included:
