@@ -10,22 +10,13 @@ SNAKEDIR = path.dirname(workflow.snakefile)
 in_genome = config["genome_fasta"]
 env_file = "compact-genome-annotation-env.yml"
 
-rule all:
-    input:
-        "versions.txt",
+rule_all_input_list=["versions.txt",
         expand("logs/{specie}_{sample}_stats_input_reads.txt", specie=config["specie"], sample=config["samples"]),
         expand("alignments/{specie}_{sample}_reads_aln_v{intron}.sorted.bam", specie=config["specie"], sample=config["samples"], intron=config["minimap2_max_intron"]),
-        expand("sample_annotations/{specie}_{sample}_no_assembled_v{intron}.gtf", 
-            specie=config["specie"], sample=config["samples"], intron=config["minimap2_max_intron"]),
-        expand("operon_finder_results/{specie}_{sample}_v{intron}_operons_found_v7.t{threshold}.tsv", specie=config["specie"], sample=config["samples"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        expand("operon_finder_results/{specie}_{sample}_v{intron}_Operons_v7.t{threshold}.clean.gtf", specie=config["specie"], sample=config["samples"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        expand("operon_finder_results/{specie}_{sample}_v{intron}_OperonGenes_v7.t{threshold}.clean.gtf", specie=config["specie"], sample=config["samples"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+        expand("sample_annotations/{specie}_{sample}_no_assembled_v{intron}.gtf",specie=config["specie"], sample=config["samples"], intron=config["minimap2_max_intron"]),
         expand("operon_finder_results/{specie}_{sample}_v{intron}_opCLEAN_v7.t{threshold}.clean.gtf", specie=config["specie"], sample=config["samples"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        expand("annotations/{specie}_LRannot_v{intron}_OFv7t{threshold}_OPRNs.gtf", specie=config["specie"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        expand("annotations/{specie}_LRannot_v{intron}_OFv7t{threshold}_OpGs.gtf", specie=config["specie"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("annotations/Merge_OPRNs-OpGs_{specie}_LRannot_v{intron}_OFv7t{threshold}.sorted.gtf", specie=config["specie"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        expand("annotations/{specie}_LRannot_v{intron}_OFv7t{threshold}_StringtieMerge.clean-and-OPRNs.gtf",
-            specie=config["specie"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+        expand("annotations/{specie}_LRannot_v{intron}_OFv7t{threshold}_StringtieMerge.clean-and-OPRNs.gtf", specie=config["specie"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("annotations/{specie}_LRannot_v{intron}_OFv7t{threshold}_StringtieMerge.clean-noOPRNs_longest_trans_only.gtf",
             specie=config["specie"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("busco_analysis/{specie}_LRannot_v{intron}_OFv7t{threshold}_StringtieMerge.clean-noOPRNs_longest_trans_only.fasta",
@@ -38,6 +29,20 @@ rule all:
             specie=config["specie"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("busco_analysis/BUSCO_results_all_summaries_{specie}_v{intron}_OFv7t{threshold}",
             specie=config["specie"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"])
+        ]
+if config["run_gffcomapre"] == "True" :
+    rule_all_input_list.extend("Gffcompare_results")
+
+#Other files not included:
+#        expand("operon_finder_results/{specie}_{sample}_v{intron}_operons_found_v7.t{threshold}.tsv", specie=config["specie"], sample=config["samples"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+#        expand("operon_finder_results/{specie}_{sample}_v{intron}_Operons_v7.t{threshold}.clean.gtf", specie=config["specie"], sample=config["samples"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+#        expand("operon_finder_results/{specie}_{sample}_v{intron}_OperonGenes_v7.t{threshold}.clean.gtf", specie=config["specie"], sample=config["samples"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+#        expand("annotations/{specie}_LRannot_v{intron}_OFv7t{threshold}_OPRNs.gtf", specie=config["specie"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+#        expand("annotations/{specie}_LRannot_v{intron}_OFv7t{threshold}_OpGs.gtf", specie=config["specie"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+                
+rule all:
+    input:
+        rule_all_input_list
 
 rule dump_versions:
     output: ver = "versions.txt"
@@ -371,12 +376,13 @@ rule run_gffcompare:
         prefix = "{specie}_LRannot_v{intron}_OFv7t{threshold}"
     conda: env:file
     shell:"""
-    if [[ {params.run} == "True" ]] ; then
+    if [[ {input.ref} == "" ]] ; then
+        echo \"Error: No reference annoation provided.\" >&2
+        exit 1
+    else
         mkdir -p {output.gffcmp_dir}
         gffcompare -r {input.ref} {input.gtf_longest} -o ./Gffcompare_results/{params.prefix}_longest_trans
         gffcompare -r {input.ref} {input.gtf_noOPRNs} -o ./Gffcompare_results/{params.prefix}_noOPRNs
         gffcompare -r {input.ref} {input.gtf_andOPRNs} -o ./Gffcompare_results/{params.prefix}_andOPRNs
-    else
-        echo \"No reference annoation provided.\"
     fi
     """
