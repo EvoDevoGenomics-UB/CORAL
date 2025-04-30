@@ -1,6 +1,7 @@
 import gffutils # type: ignore
 import sys
 import os
+import logging
 from collections import defaultdict, Counter
 
 # Check if the user provided a GTF file
@@ -10,12 +11,18 @@ if len(sys.argv) != 2:
 
 # Get the input GTF file from the command line
 gtf_file = sys.argv[1]
+log_file = os.path.splitext(gtf_file)[0] + "_LongestTransFilte.log"
 
 # Ensure the file exists
 if not os.path.isfile(gtf_file):
     print(f"Error: File '{gtf_file}' not found.")
+    logging.error(f"File '{gtf_file}' not found.")
     sys.exit(1)
 
+logging.basicConfig(filename = log_file ,
+                    format = '%(asctime)s %(levelname)s - %(message)s',
+                    filemode = 'w',
+                    level = logging.INFO)
 # Create a database from the GTF file (stored in memory)
 db_filename = os.path.splitext(gtf_file)[0] + "_annotation.db"
 db = gffutils.create_db(
@@ -27,6 +34,7 @@ db = gffutils.create_db(
     disable_infer_genes=True
 )
 print(f"File '{db_filename}' created.")
+logging.info(f"File '{db_filename}' created.")
 
 # Define output file
 output_file = os.path.splitext(gtf_file)[0] + "_longest_trans_only.gtf"
@@ -49,6 +57,7 @@ for chrom, transcripts in chrom_transcripts.items():
 longest_transcripts = []
 for chrom in gene_transcripts:
     print(f"Processing {chrom}...")
+    logging.info(f"Processing {chrom}...")
     for gene_id, tx_list in gene_transcripts[chrom].items():
         max_len = 0
         longest_tx = None
@@ -69,3 +78,4 @@ with open(output_file, "w") as contained_out:
             contained_out.write(str(feature) + "\n")
 
 print(f"GTF with only longest transcripts saved to {output_file}")
+logging.info(f"GTF with only longest transcripts saved to {output_file}")

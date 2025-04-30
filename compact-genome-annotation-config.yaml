@@ -24,6 +24,10 @@ samples: ["BP01","BP02","BP03","BP04","BP05","BP06","BP07","BP08","BP09","BP10ne
 
 # Input genome
 genome_fasta: "/data2/cristian/ntorres2/LongRead_RNAseq/Snakemake_Tutorial/REF_genomes/Bar2_p4.Flye.masked.fa"
+# Gffcomapre run?
+run_gffcomapre: True
+# Input reference annotation
+reference_annot: "/data2/cristian/ntorres2/LongRead_RNAseq/Snakemake_Tutorial/REF_genomes/Bar2_p4_v4.3.gff3"
 
 # Extra option passed to minimap2 when generating index
 minimap_index_opts: "-k14"

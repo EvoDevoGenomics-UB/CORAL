@@ -2,6 +2,7 @@ import gffutils # type: ignore
 import sys
 import os
 import argparse
+import logging
 from collections import defaultdict, Counter
 
 # Argument parser setup
@@ -26,6 +27,11 @@ parser.add_argument(
     #required=True,
     help="Prefix of the output files [default: input base name]."
 )
+parser.add_argument(
+    "--log",
+    #required=True,
+    help="Log file [default: input base name .log]."
+)
 # Parse arguments
 args = parser.parse_args()
 # Extract values
@@ -37,9 +43,21 @@ if args.output:
 else:
     out_prefix = os.path.splitext(gtf_file)[0]
 
+#Set log output file
+if args.log:
+    log_file = args.log
+else:
+    log_file = os.path.splitext(gtf_file)[0] + "_OFv7.log"
+#Define logger
+logging.basicConfig(filename= log_file, 
+					format='%(asctime)s %(levelname)s - %(message)s', 
+					filemode='w',
+                    level=logging.INFO) 
+
 # Ensure the file exists
 if not os.path.isfile(gtf_file):
     print(f"Error: File '{gtf_file}' not found.")
+    logging.error(f'File {gtf_file} not found.')
     sys.exit(1)
 
 # Create a database from the GTF file (stored in memory)
@@ -53,6 +71,7 @@ db = gffutils.create_db(
     disable_infer_genes=True
 )
 print(f"File '{db_filename}' created.")
+logging.info(f"File '{db_filename}' created.")
 
 # Define output file
 output_file = out_prefix + "_operons_found_v7.t"+ str(threshold) +".tsv"
@@ -70,6 +89,7 @@ contained_pairs = []
 # Find contained transcripts (with progress tracking)
 for chrom, transcripts in chrom_transcripts.items():
     print(f"Processing {chrom} ({len(transcripts)} transcripts)...")
+    logging.info(f"Processing {chrom} ({len(transcripts)} transcripts)...")
     
     for idx, transcript in enumerate(transcripts, 1):
         if idx % max(1, len(transcripts) // 20) == 0:  # Print progress every 5% intervals
@@ -138,6 +158,7 @@ with open(output_file, "w") as out_file:
         out_file.write(f"{operon}\t{transcript}\n")
 
 print(f"Operon-Genes found saved to TSV file {output_file}")
+logging.info(f"Operon-Genes found saved to TSV file {output_file}")
 
 # Create sets of operon and gene transcript IDs
 operon_ids = {operon for operon, _ in final_pairs_DEF}
@@ -163,7 +184,7 @@ for transcript in db.features_of_type("transcript"):
 operon_gtf_file = out_prefix + "_Operons_v7.t" + str(threshold) + ".gtf"
 contained_gtf_file = out_prefix + "_OperonGenes_v7.t" + str(threshold) + ".gtf"
 containedALL_gtf_file = out_prefix + "_OperonGenesALL_v7.t" + str(threshold) + ".gtf"
-clean_gtf_file = out_prefix + "_opCLEAN_v6.t" + str(threshold) + ".gtf"
+clean_gtf_file = out_prefix + "_opCLEAN_v7.t" + str(threshold) + ".gtf"
 
 # Write operon transcripts to GTF
 with open(operon_gtf_file, "w") as operon_out:
@@ -200,3 +221,4 @@ with open(clean_gtf_file, "w") as clean_out:
                clean_out.write(str(feature) + "\n")
 
 print(f"GTF files saved: \n {operon_gtf_file} (operons) \n {contained_gtf_file} (non-overlaped contained genes) \n {containedALL_gtf_file} ( ALL contained genes) \n {clean_gtf_file} (clean)")
+logging.info(f"GTF files saved: \n {operon_gtf_file} (operons) \n {contained_gtf_file} (non-overlaped contained genes) \n {containedALL_gtf_file} ( ALL contained genes) \n {clean_gtf_file} (clean)")
