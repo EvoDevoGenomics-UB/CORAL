@@ -211,7 +211,7 @@ rule run_operon_annotation:
 #Create final concensus annotations
 rule run_final_annotation:
     input:
-        gtfsclean = expand("operon_finder_results/{specie}_{sample}_v{intron}_Operons_v7.t{threshold}.clean.gtf", 
+        gtfsclean = expand("operon_finder_results/{specie}_{sample}_v{intron}_opCLEAN_v7.t{threshold}.clean.gtf", 
             specie=config["specie"], sample=config["samples"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         mergegtf = rules.run_operon_annotation.output.merge ,
         opgenesgtf = rules.run_operon_annotation.output.opgenesgtf
