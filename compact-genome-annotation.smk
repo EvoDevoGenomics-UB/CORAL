@@ -167,7 +167,7 @@ rule run_operon_finder_and_sanatizing:
     threads: config["threads"]
     shell:"""
     mkdir -p operon_finder_results
-    ( python {SNAKEDIR}/scripts/operon_finder_v7.py -f {input.gtf} --threshold {params.threshold} -o {params.name} ) 2> {log}
+    python {SNAKEDIR}/scripts/operon_finder_v7.2.py -f {input.gtf} --threshold {params.threshold} -o {params.name} --log {log}
     
     awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
     else print $0}}\' {params.name}_Operons_v7.t{params.threshold}.gtf > {params.name}_Operons_v7.t{params.threshold}.tmp ; \
