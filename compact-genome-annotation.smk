@@ -313,17 +313,17 @@ rule run_busco_analyses:
     """
 rule busco_plot:
     input:
-        #lin = rules.busco_download_lineage.output,
-        dirs = rules.run_busco_analyses.output
+        out_longtrans = "busco_analysis/BUSCO_trans_{specie}_LRannot_v{intron}_OFv7t{threshold}_noOPRNs_longest_trans_only",
+        out_noOPRNs = "busco_analysis/BUSCO_trans_{specie}_LRannot_v{intron}_OFv7t{threshold}_noOPRNs",
+        out_andOPRNs = "busco_analysis/BUSCO_trans_{specie}_LRannot_v{intron}_OFv7t{threshold}_andOPRNs"
     output:
         out_dir = directory("busco_analysis/BUSCO_results_all_summaries_{specie}_v{intron}_OFv7t{threshold}")
     conda: env_file
     shell:"""
-        mkdir -p {output.out_dir};
-        for i in {input};
-        do
-            cp {WORKDIR}$i/short_summary.*.txt {output.out_dir}
-        done
+        mkdir -p {output.out_dir}
+        cp {WORKDIR}{input.out_longtrans}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.noOPRNs_longtrans.txt
+        cp {WORKDIR}{input.out_noOPRNs}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.noOPRNs.txt
+        cp {WORKDIR}{input.out_andOPRNs}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.andOPRNs.txt
         python3 {SNAKEDIR}/scripts/generate_plot.py -wd {output.out_dir}
         """
 
@@ -375,8 +375,8 @@ rule run_gffcompare:
         exit 1
     else
         mkdir -p {output.gffcmp_dir}
-        gffcompare -r {input.ref} {input.gtf_longest} -o ./Gffcompare_results/{params.prefix}_longest_trans
-        gffcompare -r {input.ref} {input.gtf_noOPRNs} -o ./Gffcompare_results/{params.prefix}_noOPRNs
-        gffcompare -r {input.ref} {input.gtf_andOPRNs} -o ./Gffcompare_results/{params.prefix}_andOPRNs
+        gffcompare -r {input.ref} {input.gtf_longest} -o ./{output.gffcmp_dir}/{params.prefix}_longest_trans
+        gffcompare -r {input.ref} {input.gtf_noOPRNs} -o ./{output.gffcmp_dir}/{params.prefix}_noOPRNs
+        gffcompare -r {input.ref} {input.gtf_andOPRNs} -o ./{output.gffcmp_dir}/{params.prefix}_andOPRNs
     fi
     """
