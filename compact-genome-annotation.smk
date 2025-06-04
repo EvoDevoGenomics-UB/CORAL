@@ -351,7 +351,7 @@ rule run_final_operon_search:
     output:
         dir_name = directory("operon_finder_results/{specie}_LRannot_v{intron}_OFv9t{threshold}_DEF")
     params:
-        name = "operon_finder_results/{specie}_LRannot_v{intron}_OFv9t{threshold}_StringtieMerge.clean-and-OPRNs.counts",
+        name = "{specie}_LRannot_v{intron}_OFv9t{threshold}_StringtieMerge.clean-and-OPRNs.counts",
         threshold = config["operon_threshold"]
     log: "logs/{specie}_LRannot_v{intron}_OFv9t{threshold}_operon_finder_run_FINAL.log"
     conda: env_file
