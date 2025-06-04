@@ -349,13 +349,14 @@ rule run_final_operon_search:
     input:
         gtf = rules.run_recover_coverage.output.gtfFinal
     output:
-        name = "operon_finder_results/{specie}_LRannot_v{intron}_OFv9t{threshold}_StringtieMerge.clean-and-OPRNs.counts"
+        dir_name = directory("operon_finder_results/{specie}_LRannot_v{intron}_OFv9t{threshold}_DEF")
     params:
+        name = "operon_finder_results/{specie}_LRannot_v{intron}_OFv9t{threshold}_StringtieMerge.clean-and-OPRNs.counts",
         threshold = config["operon_threshold"]
     log: "logs/{specie}_LRannot_v{intron}_OFv9t{threshold}_operon_finder_run_FINAL.log"
     conda: env_file
     shell:"""
-    python {SNAKEDIR}/scripts/operon_finder_v9.2.py -f {input.gtf} --threshold {params.threshold} -o {output.name} --log {log}
+    python {SNAKEDIR}/scripts/operon_finder_v9.2.py -f {input.gtf} --threshold {params.threshold} -o {output.dir_name}/{params.name} --log {log}
     """
 
 #Comparing new annoatation againts reference one
