@@ -17,21 +17,15 @@ rule_all_input_list=["versions.txt",
         expand("operon_finder_results/{specie}_{sample}_v{intron}_opCLEAN_v7.t{threshold}.clean.gtf", specie=config["specie"], sample=config["samples"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("annotations/Merge_OPRNs-OpGs_{specie}_LRannot_v{intron}_OFv7t{threshold}.sorted.gtf", specie=config["specie"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("annotations/{specie}_LRannot_v{intron}_OFv7t{threshold}_StringtieMerge.clean-and-OPRNs.gtf", specie=config["specie"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        expand("annotations/{specie}_LRannot_v{intron}_OFv7t{threshold}_StringtieMerge.clean-noOPRNs_longest_trans_only.gtf",
-            specie=config["specie"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        expand("busco_analysis/{specie}_LRannot_v{intron}_OFv7t{threshold}_StringtieMerge.clean-noOPRNs_longest_trans_only.fasta",
-            specie=config["specie"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        expand("busco_analysis/{specie}_LRannot_v{intron}_OFv7t{threshold}_StringtieMerge.clean-noOPRNs.fasta",
-            specie=config["specie"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        expand("busco_analysis/{specie}_LRannot_v{intron}_OFv7t{threshold}_StringtieMerge.clean-and-OPRNs.fasta",
-            specie=config["specie"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        expand("busco_analysis/BUSCO_trans_{specie}_LRannot_v{intron}_OFv7t{threshold}_andOPRNs",
-            specie=config["specie"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        expand("busco_analysis/BUSCO_results_all_summaries_{specie}_v{intron}_OFv7t{threshold}",
-            specie=config["specie"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"])
-        ]
+        expand("annotations/{specie}_LRannot_v{intron}_OFv7t{threshold}_StringtieMerge.clean-noOPRNs_longest_trans_only.gtf", specie=config["specie"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+        expand("busco_analysis/{specie}_LRannot_v{intron}_OFv7t{threshold}_StringtieMerge.clean-noOPRNs_longest_trans_only.fasta", specie=config["specie"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+        expand("busco_analysis/{specie}_LRannot_v{intron}_OFv7t{threshold}_StringtieMerge.clean-noOPRNs.fasta", specie=config["specie"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+        expand("busco_analysis/{specie}_LRannot_v{intron}_OFv7t{threshold}_StringtieMerge.clean-and-OPRNs.fasta", specie=config["specie"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+        expand("busco_analysis/BUSCO_trans_{specie}_LRannot_v{intron}_OFv7t{threshold}_andOPRNs", specie=config["specie"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+        expand("busco_analysis/BUSCO_results_all_summaries_{specie}_v{intron}_OFv7t{threshold}", specie=config["specie"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]) ]
+
 if config["run_gffcomapre"] == True :
-    rule_all_input_list.extend("Gffcompare_results")
+    rule_all_input_list.append(expand("Gffcompare_results/{specie}_LRannot_v{intron}_OFv7t{threshold}",specie=config["specie"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]))        
 
 #Other files not included:
 #        expand("operon_finder_results/{specie}_{sample}_v{intron}_operons_found_v7.t{threshold}.tsv", specie=config["specie"], sample=config["samples"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
@@ -167,7 +161,7 @@ rule run_operon_finder_and_sanatizing:
     threads: config["threads"]
     shell:"""
     mkdir -p operon_finder_results
-    ( python {SNAKEDIR}/scripts/operon_finder_v7.py -f {input.gtf} --threshold {params.threshold} -o {params.name} ) 2> {log}
+    python {SNAKEDIR}/scripts/operon_finder_v7.2.py -f {input.gtf} --threshold {params.threshold} -o {params.name} --log {log}
     
     awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
     else print $0}}\' {params.name}_Operons_v7.t{params.threshold}.gtf > {params.name}_Operons_v7.t{params.threshold}.tmp ; \
@@ -319,17 +313,17 @@ rule run_busco_analyses:
     """
 rule busco_plot:
     input:
-        #lin = rules.busco_download_lineage.output,
-        dirs = rules.run_busco_analyses.output
+        out_longtrans = "busco_analysis/BUSCO_trans_{specie}_LRannot_v{intron}_OFv7t{threshold}_noOPRNs_longest_trans_only",
+        out_noOPRNs = "busco_analysis/BUSCO_trans_{specie}_LRannot_v{intron}_OFv7t{threshold}_noOPRNs",
+        out_andOPRNs = "busco_analysis/BUSCO_trans_{specie}_LRannot_v{intron}_OFv7t{threshold}_andOPRNs"
     output:
         out_dir = directory("busco_analysis/BUSCO_results_all_summaries_{specie}_v{intron}_OFv7t{threshold}")
     conda: env_file
     shell:"""
-        mkdir -p {output.out_dir};
-        for i in {input};
-        do
-            cp {WORKDIR}$i/short_summary.*.txt {output.out_dir}
-        done
+        mkdir -p {output.out_dir}
+        cp {WORKDIR}{input.out_longtrans}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.noOPRNs_longtrans.txt
+        cp {WORKDIR}{input.out_noOPRNs}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.noOPRNs.txt
+        cp {WORKDIR}{input.out_andOPRNs}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.andOPRNs.txt
         python3 {SNAKEDIR}/scripts/generate_plot.py -wd {output.out_dir}
         """
 
@@ -356,7 +350,7 @@ rule run_final_operon_search:
     log: "logs/{specie}_LRannot_v{intron}_OFv7t{threshold}_operon_finder_run_FINAL.log"
     conda: env_file
     shell:"""
-    (python {SNAKEDIR}/scripts/operon_finder_v7.py -f {input.gtf} --threshold {params.threshold} -o {output.name}) 2> {log}
+    python {SNAKEDIR}/scripts/operon_finder_v7.2.py -f {input.gtf} --threshold {params.threshold} -o {output.name} --log {log}
     """
 
 #Comparing new annoatation againts reference one
@@ -369,20 +363,20 @@ rule run_gffcompare:
         ref = config["reference_annot"] ,
         gtf_longest = rules.run_longest_trans_filter.output.filtergtf ,
         gtf_noOPRNs = rules.run_final_annotation.output.noOPRNs ,
-        gtf_andORPNs = rules.run_final_annotation.output.andOPRNs
+        gtf_andOPRNs = rules.run_final_annotation.output.andOPRNs
     output:
-        gffcmp_dir = directory("Gffcompare_results")
+        gffcmp_dir = directory("Gffcompare_results/{specie}_LRannot_v{intron}_OFv7t{threshold}")
     params:
         prefix = "{specie}_LRannot_v{intron}_OFv7t{threshold}"
-    conda: env:file
+    conda: env_file
     shell:"""
     if [[ {input.ref} == "" ]] ; then
         echo \"Error: No reference annoation provided.\" >&2
         exit 1
     else
         mkdir -p {output.gffcmp_dir}
-        gffcompare -r {input.ref} {input.gtf_longest} -o ./Gffcompare_results/{params.prefix}_longest_trans
-        gffcompare -r {input.ref} {input.gtf_noOPRNs} -o ./Gffcompare_results/{params.prefix}_noOPRNs
-        gffcompare -r {input.ref} {input.gtf_andOPRNs} -o ./Gffcompare_results/{params.prefix}_andOPRNs
+        gffcompare -r {input.ref} {input.gtf_longest} -o ./{output.gffcmp_dir}/{params.prefix}_longest_trans
+        gffcompare -r {input.ref} {input.gtf_noOPRNs} -o ./{output.gffcmp_dir}/{params.prefix}_noOPRNs
+        gffcompare -r {input.ref} {input.gtf_andOPRNs} -o ./{output.gffcmp_dir}/{params.prefix}_andOPRNs
     fi
     """
