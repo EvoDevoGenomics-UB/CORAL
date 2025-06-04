@@ -356,6 +356,7 @@ rule run_final_operon_search:
     log: "logs/{specie}_LRannot_v{intron}_OFv9t{threshold}_operon_finder_run_FINAL.log"
     conda: env_file
     shell:"""
+    mkdir -p {output.dir_name}
     python {SNAKEDIR}/scripts/operon_finder_v9.2.py -f {input.gtf} --threshold {params.threshold} -o {output.dir_name}/{params.name} --log {log}
     """
 
