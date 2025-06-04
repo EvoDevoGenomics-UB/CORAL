@@ -47,7 +47,7 @@ else:
 if args.log:
     log_file = args.log
 else:
-    log_file = os.path.splitext(gtf_file)[0] + "_OFv7.log"
+    log_file = os.path.splitext(gtf_file)[0] + "_OFv9.log"
 #Define logger
 logging.basicConfig(filename= log_file, 
 					format='%(asctime)s %(levelname)s - %(message)s', 
@@ -61,7 +61,7 @@ if not os.path.isfile(gtf_file):
     sys.exit(1)
 
 # Create a database from the GTF file (stored in memory)
-db_filename = os.path.splitext(gtf_file)[0] + "_annotation_v7.t"+ str(threshold) +".db"
+db_filename = os.path.splitext(gtf_file)[0] + "_annotation_v9.t"+ str(threshold) +".db"
 db = gffutils.create_db(
     gtf_file,
     dbfn=db_filename,
@@ -74,7 +74,7 @@ print(f"File '{db_filename}' created.")
 logging.info(f"File '{db_filename}' created.")
 
 # Define output file
-output_file = out_prefix + "_operons_found_v7.t"+ str(threshold) +".tsv"
+output_file = out_prefix + "_operons_found_v9.t"+ str(threshold) +".tsv"
 
 # Dictionary to store transcripts per chromosome
 chrom_transcripts = defaultdict(list)
@@ -97,18 +97,18 @@ for chrom, transcripts in chrom_transcripts.items():
             print(f"Chrom {chrom} Progress: {progress:.1f}%", end="\r")
 
         for sub_transcript in transcripts:  # Now only compares within the same chromosome
-            if transcript.id == sub_transcript.id:
+            if transcript.id == sub_transcript.id :
                 continue # Skip when comparing itself
             if transcript.strand == sub_transcript.strand:
                 if float(transcript.attributes['cov'][0])* threshold <= float(sub_transcript.attributes['cov'][0]) :
                     if transcript.start <= (sub_transcript.start + 150 ) and transcript.end >= (sub_transcript.end + 200):
                         exons = len(list(db.children(sub_transcript.id, featuretype='exon')))
-                        if exons > 1:
-                            contained_pairs.append((transcript.id, sub_transcript.id, sub_transcript.start, sub_transcript.end))
+                        if exons > 1 :
+                            contained_pairs.append((transcript.id, sub_transcript.id, sub_transcript.start, sub_transcript.end, float(sub_transcript.attributes['cov'][0])))
                     if transcript.start <= (sub_transcript.start - 200 ) and transcript.end >= (sub_transcript.end - 150):
                         exons = len(list(db.children(sub_transcript.id, featuretype='exon')))
-                        if exons > 1:
-                            contained_pairs.append((transcript.id, sub_transcript.id, sub_transcript.start, sub_transcript.end))
+                        if exons > 1 :
+                            contained_pairs.append((transcript.id, sub_transcript.id, sub_transcript.start, sub_transcript.end, float(sub_transcript.attributes['cov'][0])))
 
 # Create a set of contained transcript IDs
 contained_transcripts = {pair[1] for pair in contained_pairs}
@@ -117,33 +117,41 @@ contained_transcripts = {pair[1] for pair in contained_pairs}
 filtered_pairs = [pair for pair in contained_pairs if pair[0] not in contained_transcripts]
 
 # Count how many transcripts each operon contains
-operon_counts = Counter(operon for operon, _, _, _ in filtered_pairs)
+operon_counts = Counter(operon for operon, _, _, _, _ in filtered_pairs)
 
 # Keep only operons that contain **two or more** transcripts
 valid_operons = {operon for operon, count in operon_counts.items() if count > 1}
 
 # Group contained transcripts by operon
 operon_to_transcripts = defaultdict(list)
-for operon, transcript, start, end in filtered_pairs:
+for operon, transcript, start, end, cov in filtered_pairs:
     if operon in valid_operons:
-        operon_to_transcripts[operon].append((transcript, start, end))
+        operon_to_transcripts[operon].append((transcript, start, end, cov))
 
 # Remove overlapping contained transcripts **within the same operon**
 final_pairs = []
 for operon, transcript_list in operon_to_transcripts.items():
     # Sort transcripts by start position
-    transcript_list.sort(key=lambda x: x[1])  # Sort by start coordinate
+    transcript_list.sort(key=lambda x: (x[1]))  # Sort by start coordinate
     
     non_overlapping = []
     for current_transcript in transcript_list:
-        transcript_id, start, end = current_transcript
-        if not non_overlapping or start > non_overlapping[-1][2]:  # No overlap with previous
+        transcript_id, start, end , cov = current_transcript
+        if not non_overlapping:  # First add
             non_overlapping.append(current_transcript)
-
+        else:
+            last_id, last_start, last_end, last_cov = non_overlapping[-1]
+            if start > (last_end - 50): #No overlap with previous (50bp tolerance)
+                non_overlapping.append(current_transcript)
+            else:
+                # Hay solapamiento, conservar el de mayor cobertura
+                if cov > last_cov:
+                    non_overlapping[-1] = current_transcript
+    
     # Add non-overlapping transcripts to final output
-    for transcript_id, _, _ in non_overlapping:
+    for transcript_id, _, _, _ in non_overlapping:
         final_pairs.append((operon, transcript_id))
-
+    
 # Count how many transcripts each operon contains
 operon_counts_def = Counter(operon for operon, _ in final_pairs)
 # Keep only operons that contain **two or more** transcripts
@@ -181,10 +189,10 @@ for transcript in db.features_of_type("transcript"):
             gene_transcripts.append(transcript.id)
 
 # Define output GTF filenames
-operon_gtf_file = out_prefix + "_Operons_v7.t" + str(threshold) + ".gtf"
-contained_gtf_file = out_prefix + "_OperonGenes_v7.t" + str(threshold) + ".gtf"
-containedALL_gtf_file = out_prefix + "_OperonGenesALL_v7.t" + str(threshold) + ".gtf"
-clean_gtf_file = out_prefix + "_opCLEAN_v7.t" + str(threshold) + ".gtf"
+operon_gtf_file = out_prefix + "_Operons_v9.t" + str(threshold) + ".gtf"
+contained_gtf_file = out_prefix + "_OperonGenes_v9.t" + str(threshold) + ".gtf"
+containedALL_gtf_file = out_prefix + "_OperonGenesALL_v9.t" + str(threshold) + ".gtf"
+clean_gtf_file = out_prefix + "_opCLEAN_v9.t" + str(threshold) + ".gtf"
 
 # Write operon transcripts to GTF
 with open(operon_gtf_file, "w") as operon_out:
@@ -222,3 +230,38 @@ with open(clean_gtf_file, "w") as clean_out:
 
 print(f"GTF files saved: \n {operon_gtf_file} (operons) \n {contained_gtf_file} (non-overlaped contained genes) \n {containedALL_gtf_file} ( ALL contained genes) \n {clean_gtf_file} (clean)")
 logging.info(f"GTF files saved: \n {operon_gtf_file} (operons) \n {contained_gtf_file} (non-overlaped contained genes) \n {containedALL_gtf_file} ( ALL contained genes) \n {clean_gtf_file} (clean)")
+
+################
+# Counting the number of genes by operon
+operon_size_counter = Counter()
+
+for operon, transcript in final_pairs_DEF:
+    operon_size_counter[operon] += 1
+
+# Grouping of operons
+summary = {
+    "2 genes": 0,
+    "3 genes": 0,
+    "4 genes": 0,
+    "5 genes": 0,
+    ">5 genes": 0,
+}
+
+for count in operon_size_counter.values():
+    if count == 2:
+        summary["2 genes"] += 1
+    elif count == 3:
+        summary["3 genes"] += 1
+    elif count == 4:
+        summary["4 genes"] += 1
+    elif count == 5:
+        summary["5 genes"] += 1
+    elif count > 5:
+        summary[">5 genes"] += 1
+
+# Report of the results into the terminal and log file
+print("Summary of operons by gene number:")
+logging.info("Summary of operons by gene number:")
+for category, total in summary.items():
+    print(f"{category}: {total}")
+    logging.info(f"{category}: {total}")
