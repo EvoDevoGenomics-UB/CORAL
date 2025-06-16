@@ -93,7 +93,7 @@ rule run_minimap2:
     conda: env_file
     log: "logs/{specie}_{sample}_v{intron}_minimap2_run.log"
     shell: """
-    (minimap2 -t {threads} {params.opts} -G {params.max_intron} {params.opts} {input.index} {input.fastq} > {params.name}.sam ; \
+    (minimap2 -t {threads} -G {params.max_intron} {params.opts} {input.index} {input.fastq} > {params.name}.sam ; \
     head -2 {params.name}.sam ) 2> {log}
     echo \"{params.name}.sam created\"
     samtools view {params.name}.sam -@ {threads} -O BAM -o {params.name}.bam
