@@ -199,34 +199,34 @@ with open(operon_gtf_file, "w") as operon_out:
     for operon_id in operon_ids:
         operon_feature = db[operon_id]
         # Write the transcript feature
-        operon_out.write(str(operon_feature) + "\n")
+        operon_out.write(str(operon_feature).replace('""', '"').replace('";"', '";') + "\n")
         # Write its child features (e.g., exons)
         for feature in db.children(operon_id, featuretype='exon', order_by='start'):
-            operon_out.write(str(feature) + "\n")
+            operon_out.write(str(feature).replace('""', '') + "\n")
 
 # Write non-overlaped contained gene transcripts to GTF
 with open(contained_gtf_file, "w") as contained_out:
     for transcript_id in contained_ids:
         transcript_feature = db[transcript_id]
-        contained_out.write(str(transcript_feature) + "\n")
+        contained_out.write(str(transcript_feature).replace('""', '"').replace('";"', '";') + "\n")
         for feature in db.children(transcript_id, featuretype='exon', order_by='start'):
-            contained_out.write(str(feature) + "\n")
+            contained_out.write(str(feature).replace('""', '') + "\n")
 # Write ALL contained gene transcripts to GTF
 with open(containedALL_gtf_file, "w") as containedALL_out:
     for transcript_id in gene_transcripts:
         transcript_feature = db[transcript_id]
-        containedALL_out.write(str(transcript_feature) + "\n")
+        containedALL_out.write(str(transcript_feature).replace('""', '"').replace('";"', '";') + "\n")
         for feature in db.children(transcript_id, featuretype='exon', order_by='start'):
-            containedALL_out.write(str(feature) + "\n")
+            containedALL_out.write(str(feature).replace('""', '') + "\n")
 
 # Write Clean GTF no containgin OPRNs nor OpGenes
 with open(clean_gtf_file, "w") as clean_out:
     for transcript in db.features_of_type("transcript"):
         if transcript.id not in operon_ids and transcript.id not in gene_transcripts:
             transcript_feature = db[transcript.id]
-            clean_out.write(str(transcript_feature) + "\n")
+            clean_out.write(str(transcript_feature).replace('""', '"').replace('";"', '";') + "\n")
             for feature in db.children(transcript.id, featuretype='exon', order_by='start'):
-               clean_out.write(str(feature) + "\n")
+               clean_out.write(str(feature).replace('""', '') + "\n")
 
 print(f"GTF files saved: \n {operon_gtf_file} (operons) \n {contained_gtf_file} (non-overlaped contained genes) \n {containedALL_gtf_file} ( ALL contained genes) \n {clean_gtf_file} (clean)")
 logging.info(f"GTF files saved: \n {operon_gtf_file} (operons) \n {contained_gtf_file} (non-overlaped contained genes) \n {containedALL_gtf_file} ( ALL contained genes) \n {clean_gtf_file} (clean)")
