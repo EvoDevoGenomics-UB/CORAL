@@ -166,15 +166,15 @@ rule run_operon_finder_and_sanatizing:
     python {SNAKEDIR}/scripts/operon_finder_v9.2.py -f {input.gtf} --threshold {params.threshold} -o {params.name} --log {log}
     
     awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
-    else print $0}}\' {params.name}_Operons_v9.t{params.threshold}.gtf > {params.name}_Operons_v9.t{params.threshold}.tmp ; \
+    else print $0}}\' {params.name}_Operons_v9.t{params.threshold}.gtf | sed 's/TPM \"\"/TPM \"/g' | sed 's/\;\"/\;/g' | sed 's/ \"\"//g' > {params.name}_Operons_v9.t{params.threshold}.tmp ; \
     gffread --sort-alpha -F -T -o {output.gtfOPRNs} {params.name}_Operons_v9.t{params.threshold}.tmp
 
     awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
-    else print $0}}\' {params.name}_OperonGenes_v9.t{params.threshold}.gtf > {params.name}_OperonGenes_v9.t{params.threshold}.tmp ; \
+    else print $0}}\' {params.name}_OperonGenes_v9.t{params.threshold}.gtf | sed 's/TPM \"\"/TPM \"/g' | sed 's/\;\"/\;/g' | sed 's/ \"\"//g' > {params.name}_OperonGenes_v9.t{params.threshold}.tmp ; \
     gffread --sort-alpha -F -T -o {output.gtfOpGs} {params.name}_OperonGenes_v9.t{params.threshold}.tmp
 
     awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
-    else print $0}}\' {params.name}_opCLEAN_v9.t{params.threshold}.gtf > {params.name}_opCLEAN_v9.t{params.threshold}.tmp ; \
+    else print $0}}\' {params.name}_opCLEAN_v9.t{params.threshold}.gtf | sed 's/TPM \"\"/TPM \"/g' | sed 's/\;\"/\;/g' | sed 's/ \"\"//g' > {params.name}_opCLEAN_v9.t{params.threshold}.tmp ; \
     gffread --sort-alpha -F -T -o {output.gtfCLEAN} {params.name}_opCLEAN_v9.t{params.threshold}.tmp
 
     rm {params.name}*{params.threshold}.tmp
