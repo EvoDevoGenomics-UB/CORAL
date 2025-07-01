@@ -93,7 +93,7 @@ rule run_minimap2:
     conda: env_file
     log: "logs/{specie}_{sample}_v{intron}_minimap2_run.log"
     shell: """
-    (minimap2 -t {threads} -G {params.max_intron} {params.opts} {input.index} {input.fastq} > {params.name}.sam ; \
+    (minimap2 -t {threads} {params.opts} -G {params.max_intron} {params.opts} {input.index} {input.fastq} > {params.name}.sam ; \
     head -2 {params.name}.sam ) 2> {log}
     echo \"{params.name}.sam created\"
     samtools view {params.name}.sam -@ {threads} -O BAM -o {params.name}.bam
@@ -163,7 +163,7 @@ rule run_operon_finder_and_sanatizing:
     threads: config["threads"]
     shell:"""
     mkdir -p operon_finder_results
-    python {SNAKEDIR}/scripts/operon_finder_v9.4.py -f {input.gtf} --threshold {params.threshold} -o {params.name} --log {log}
+    python {SNAKEDIR}/scripts/operon_finder_v9.5.py -f {input.gtf} --threshold {params.threshold} -o {params.name} --log {log}
     
     awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
     else print $0}}\' {params.name}_Operons_v9.t{params.threshold}.gtf > {params.name}_Operons_v9.t{params.threshold}.tmp ; \
@@ -190,7 +190,8 @@ rule run_operon_annotation:
     output:
         operongtf = "annotations/{specie}_LRannot_v{intron}_OFv9t{threshold}_OPRNs.gtf",
         opgenesgtf = "annotations/{specie}_LRannot_v{intron}_OFv9t{threshold}_OpGs.gtf",
-        merge = "annotations/Merge_OPRNs-OpGs_{specie}_LRannot_v{intron}_OFv9t{threshold}.sorted.gtf"
+        merge = "annotations/Merge_OPRNs-OpGs_{specie}_LRannot_v{intron}_OFv9t{threshold}.sorted.gtf",
+        def_file = "annotations/Merge_OPRNs-OpGs_{specie}_LRannot_v{intron}_OFv9t{threshold}.sorted_OPRNstatistics.clean.gtf"
     params:
         freq = config["stringtie_freq"]
     conda: env_file
@@ -202,6 +203,8 @@ rule run_operon_annotation:
     stringtie --merge -l OPRN -f {params.freq} -F 0 -T 0 -c 0 -g 0 -o {output.operongtf} annotations/List_merge_OPRNs.txt ; \
     cat {output.operongtf} {output.opgenesgtf} > tmp.gtf ; \
     gffread --sort-alpha -F -T -o {output.merge} tmp.gtf ; rm tmp.gtf
+
+    python3 {SNAKEDIR}/scripts/operon_statistics.py -f {output.merge}
     """
 
 #Create final concensus annotations
@@ -209,7 +212,7 @@ rule run_final_annotation:
     input:
         gtfsclean = expand("operon_finder_results/{specie}_{sample}_v{intron}_opCLEAN_v9.t{threshold}.clean.gtf", 
             specie=config["specie"], sample=config["samples"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        mergegtf = rules.run_operon_annotation.output.merge ,
+        mergegtf = rules.run_operon_annotation.output.def_file ,
         opgenesgtf = rules.run_operon_annotation.output.opgenesgtf
     output:
         cleanfinal = "annotations/{specie}_LRannot_v{intron}_OFv9t{threshold}_mergeCLEAN.gtf" ,
@@ -357,7 +360,7 @@ rule run_final_operon_search:
     conda: env_file
     shell:"""
     mkdir -p {output.dir_name}
-    python {SNAKEDIR}/scripts/operon_finder_v9.4.py -f {input.gtf} --threshold {params.threshold} -o {output.dir_name}/{params.name} --log {log}
+    python {SNAKEDIR}/scripts/operon_finder_v9.5.py -f {input.gtf} --threshold {params.threshold} -o {output.dir_name}/{params.name} --log {log}
     """
 
 #Comparing new annoatation againts reference one
