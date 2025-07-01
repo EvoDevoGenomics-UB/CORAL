@@ -105,7 +105,7 @@ for chrom, transcripts in chrom_transcripts.items():
             if transcript.strand == sub_transcript.strand:
                 sub_transcript_cov = float(sub_transcript.attributes['cov'][0])
                 if (transcript_cov * threshold) < sub_transcript_cov:
-                    if transcript.start <= (sub_transcript.start + 250 ) and transcript.end >= (sub_transcript.end - 250):
+                    if (transcript.start <= (sub_transcript.start + 250 ) < (transcript.end+250)) and (transcript.end >= (sub_transcript.end - 250) > (transcript.start-250)):
                         exons = len(list(db.children(sub_transcript.id, featuretype='exon')))
                         if exons > 1 :
                             contained_pairs.append((transcript.chrom, transcript.strand, transcript.id, transcript.start, transcript.end, sub_transcript.id, sub_transcript.start, sub_transcript.end, float(sub_transcript.attributes['FPKM'][0])))
