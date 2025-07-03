@@ -297,7 +297,8 @@ with open(containedALL_gtf_file, "w") as containedALL_out:
 with open(clean_gtf_file, "w") as clean_out:
     for transcript in db.features_of_type("transcript"):
         transcript_cov = float(transcript.attributes['cov'][0])
-        if transcript_cov <= 1:
+        exons = len(list(db.children(transcript.id, featuretype='exon')))
+        if (transcript_cov <= 1) or (exons == 1 and transcript_cov <= 3):
             continue
         if transcript.id not in operon_ids and transcript.id not in gene_transcripts:
             transcript_feature = db[transcript.id]
