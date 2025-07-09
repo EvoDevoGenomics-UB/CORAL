@@ -6,6 +6,7 @@ workdir: path.join(config["workdir_top"], config["pipeline"])
 
 WORKDIR = path.join(path.dirname(workflow.snakefile),config["workdir_top"], config["pipeline"])
 SNAKEDIR = path.dirname(workflow.snakefile)
+exeOpF = "python {SNAKEDIR}/scripts/operon_finder_v9.7.py"
 
 in_genome = config["genome_fasta"]
 env_file = "compact-genome-annotation-env.yml"
@@ -28,13 +29,6 @@ rule_all_input_list=["versions.txt",
 
 if config["run_gffcomapre"] == True :
     rule_all_input_list.append(expand("Gffcompare_results/{specie}_LRannot_v{intron}_OFv9t{threshold}",specie=config["specie"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]))        
-
-#Other files not included:
-#        expand("operon_finder_results/{specie}_{sample}_v{intron}_operons_found_v9.t{threshold}.tsv", specie=config["specie"], sample=config["samples"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-#        expand("operon_finder_results/{specie}_{sample}_v{intron}_Operons_v9.t{threshold}.clean.gtf", specie=config["specie"], sample=config["samples"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-#        expand("operon_finder_results/{specie}_{sample}_v{intron}_OperonGenes_v9.t{threshold}.clean.gtf", specie=config["specie"], sample=config["samples"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-#        expand("annotations/{specie}_LRannot_v{intron}_OFv9t{threshold}_OPRNs.gtf", specie=config["specie"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-#        expand("annotations/{specie}_LRannot_v{intron}_OFv9t{threshold}_OpGs.gtf", specie=config["specie"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
                 
 rule all:
     input:
@@ -163,7 +157,7 @@ rule run_operon_finder_and_sanatizing:
     threads: config["threads"]
     shell:"""
     mkdir -p operon_finder_results
-    python {SNAKEDIR}/scripts/operon_finder_v9.4.py -f {input.gtf} --threshold {params.threshold} -o {params.name} --log {log}
+    {exeOpF} -f {input.gtf} --threshold {params.threshold} -o {params.name} --log {log}
     
     awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
     else print $0}}\' {params.name}_Operons_v9.t{params.threshold}.gtf > {params.name}_Operons_v9.t{params.threshold}.tmp ; \
@@ -357,7 +351,7 @@ rule run_final_operon_search:
     conda: env_file
     shell:"""
     mkdir -p {output.dir_name}
-    python {SNAKEDIR}/scripts/operon_finder_v9.4.py -f {input.gtf} --threshold {params.threshold} -o {output.dir_name}/{params.name} --log {log}
+    {exeOpF} -f {input.gtf} --threshold {params.threshold} -o {output.dir_name}/{params.name} --log {log}
     """
 
 #Comparing new annoatation againts reference one
