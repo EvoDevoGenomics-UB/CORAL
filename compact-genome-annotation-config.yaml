@@ -1,9 +1,9 @@
 ---
 ## General pipeline parameters:
 # Threads:
-threads: 4
+threads: 16
 # Name of the Results folder inside the working directory (IMPORTAT to include last "/"):
-pipeline: "OdiBAR_annotation_DEF/"
+pipeline: "OdiBAR_annotation_DEFv2/"
 # ABSOLUTE path to working directory (IMPORTAT to include last "/"):
 workdir_top: "/data2/cristian/ntorres2/LongRead_RNAseq/Workspaces/"
 
@@ -27,8 +27,7 @@ genome_fasta: "/data2/cristian/ntorres2/LongRead_RNAseq/Snakemake_Tutorial/REF_g
 # Gffcomapre run?
 run_gffcomapre: True
 # Input reference annotation
-reference_annot: "/data2/cristian/ntorres2/LongRead_RNAseq/Snakemake_Tutorial/REF_genomes/Bar2_p4_v4.3.gff3"
-
+reference_annot: "/data2/cristian/ntorres2/LongRead_RNAseq/Snakemake_Tutorial/REF_genomes/Bar2_p4_v4.3.gtf"
 # Extra option passed to minimap2 when generating index
 minimap_index_opts: "-k14"
 
@@ -36,13 +35,15 @@ minimap_index_opts: "-k14"
 minimap2_opts: "-ax splice"
 minimap2_max_intron: "10k"
 minimum_mapping_quality: 40
+#TransClean_opts: "--correctMismatches False --spliceJns /data2/cristian/ntorres2/LongRead_RNAseq/SR_PUAs_all_Vit-Nur_junctions_v2.bed"
 
 # Options passed to stringtie:
 stringtie_opts: "-M 0.75 -j 2 -a 15 "
+stringtie_guide_opts: ["REF","none"]
 stringtie_freq: 0.2
 
 #Operon finder options:
-operon_threshold: 1.25
+operon_threshold: 1.0
 
 # BUSCO options
 lineages: metazoa_odb10
