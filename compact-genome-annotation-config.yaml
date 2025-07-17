@@ -3,7 +3,7 @@
 # Threads:
 threads: 16
 # Name of the Results folder inside the working directory (IMPORTAT to include last "/"):
-pipeline: "OdiBAR_annotation_DEFv2/"
+pipeline: "OdiBAR_annotation_DEF/"
 # ABSOLUTE path to working directory (IMPORTAT to include last "/"):
 workdir_top: "/data2/cristian/ntorres2/LongRead_RNAseq/Workspaces/"
 
