@@ -42,16 +42,17 @@ if args.output:
     out_prefix = args.output
 else:
     out_prefix = os.path.splitext(gtf_file)[0]
+
 #Set log output file
 if args.log:
     log_file = args.log
 else:
     log_file = os.path.splitext(gtf_file)[0] + "_OFv9.log"
 #Define logger
-logging.basicConfig(filename= log_file, 
-		    format='%(asctime)s %(levelname)s - %(message)s', 
-		    filemode='w',
-                    level=logging.INFO) 
+logging.basicConfig(filename= log_file,
+					format= '%(asctime)s %(levelname)s - %(message)s', 
+					filemode= 'w',
+          level= logging.INFO) 
 
 # Ensure the file exists
 if not os.path.isfile(gtf_file):
@@ -186,11 +187,10 @@ for (chrom, strand), op_trans_list in chr_to_operons.items():
                 counter += 1
                 op_ID = str("OPRN."+ str(counter))
                 overlapping.append((operon, op_start, op_end, transcript_id, start, end , fpkm, op_ID))
-                seen_transcripts.add(transcript_id)   
-
+                seen_transcripts.add(transcript_id)
+    
 # Group contained transcripts by operon
 operon_to_transcripts_2 = defaultdict(list)
-
 # Add overlapping transcripts to final output
 for operon, _, _, transcript_id, start, end , fpkm, op_ID in overlapping:
     operon_to_transcripts_2[op_ID].append((transcript_id, start, end , fpkm, operon))
@@ -228,6 +228,7 @@ out_operons = {operon for operon, count in operon_counts_def.items() if count < 
 # Filter out rows where the first column appears in the second column
 final_pairs_DEF = [pair for pair in final_pairs if pair[0] not in out_operons]
 out_pairs_DEF = [pair for pair in final_pairs if pair[0] in out_operons]
+
 ##########################
 # Write to output file
 with open(output_file, "w") as out_file:
