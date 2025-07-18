@@ -49,10 +49,10 @@ if args.log:
 else:
     log_file = os.path.splitext(gtf_file)[0] + "_OFv9.log"
 #Define logger
-logging.basicConfig(filename= log_file, 
-					format='%(asctime)s %(levelname)s - %(message)s', 
-					filemode='w',
-                    level=logging.INFO) 
+logging.basicConfig(filename= log_file,
+					format= '%(asctime)s %(levelname)s - %(message)s', 
+					filemode= 'w',
+          level= logging.INFO) 
 
 # Ensure the file exists
 if not os.path.isfile(gtf_file):
@@ -79,7 +79,7 @@ output_file_outs = out_prefix + "_operons_found_v9.t"+ str(threshold) +".outs.ts
 # Dictionary to store transcripts per chromosome
 chrom_transcripts = defaultdict(list)
 #####################################
-# Funtiosa to find inner transcripts
+# Funtions to find inner transcripts
 def transcripts_inside_op(container, inner, tolerance, threshold):
     container_cov = float(container.attributes['cov'][0])
     inner_cov = float(inner.attributes['cov'][0])
@@ -200,7 +200,6 @@ final_pairs = []
 for op_ID, transcript_list2 in operon_to_transcripts_2.items():
     # Sort transcripts by start position
     transcript_list2.sort(key=lambda x: (x[1]))  # Sort by start coordinate
-    
     non_overlapping2 = []
     for current_transcript2 in transcript_list2:
         transcript_id, start, end , fpkm, operon = current_transcript2
@@ -218,7 +217,6 @@ for op_ID, transcript_list2 in operon_to_transcripts_2.items():
                     non_overlapping2[-1] = current_transcript2
                 elif fpkm == last_fpkm and exons > last_exons:
                     non_overlapping2[-1] = current_transcript2
-    
     # Add non-overlapping transcripts to final output
     for transcript_id, _, _ , _, operon in non_overlapping2:
         final_pairs.append((op_ID, operon, transcript_id))
