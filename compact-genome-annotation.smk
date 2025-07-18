@@ -11,9 +11,9 @@ exeOpF = "python {SNAKEDIR}/scripts/operon_finder_v9.7.py"
 in_genome = config["genome_fasta"]
 env_file = "compact-genome-annotation-env.yml"
 REF = config["reference_annot"]
-exeOpF = path.join(path.dirname(workflow.snakefile),"scripts/operon_finder_v9.7.py")
+exeOpF = "./operon-finder"
 
-rule_all_input_list=["versions.txt",
+rule_all_input_list=["versions.txt","operon-finder",
         expand("logs/{specie}_{sample}_stats_input_reads.txt", specie=config["specie"], sample=config["samples"]),
         expand("alignments/{specie}_{sample}_reads_aln_v{intron}.sorted.bam", specie=config["specie"], sample=config["samples"], intron=config["minimap2_max_intron"]),
         expand("sample_annotations/{specie}_{sample}_guide{ref}_v{intron}.gtf", specie=config["specie"], sample=config["samples"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"]),
@@ -163,6 +163,7 @@ rule do_operon_annotations:
 #Python script operon_finder
 rule run_operon_finder_and_sanatizing:
     input:
+        operon_finder = rules.build_operon_finder.output,
         gtf = rules.run_stringtie_sample_annotations.output.gtf
     output:
         file = "operon_finder_results/{specie}_guide{ref}_{sample}_v{intron}_operons_found_v9.t{threshold}.tsv",
@@ -179,19 +180,9 @@ rule run_operon_finder_and_sanatizing:
     mkdir -p operon_finder_results
     {exeOpF} -f {input.gtf} --threshold {params.threshold} -o {params.name} --log {log}
     
-    awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
-    else print $0}}\' {params.name}_Operons_v9.t{params.threshold}.gtf > {params.name}_Operons_v9.t{params.threshold}.tmp ; \
-    gffread --sort-alpha -F -T -o {output.gtfOPRNs} {params.name}_Operons_v9.t{params.threshold}.tmp
-
-    awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
-    else print $0}}\' {params.name}_OperonGenes_v9.t{params.threshold}.gtf > {params.name}_OperonGenes_v9.t{params.threshold}.tmp ; \
-    gffread --sort-alpha -F -T -o {output.gtfOpGs} {params.name}_OperonGenes_v9.t{params.threshold}.tmp
-
-    awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
-    else print $0}}\' {params.name}_opCLEAN_v9.t{params.threshold}.gtf > {params.name}_opCLEAN_v9.t{params.threshold}.tmp ; \
-    gffread --sort-alpha -F -T -o {output.gtfCLEAN} {params.name}_opCLEAN_v9.t{params.threshold}.tmp
-
-    rm {params.name}*{params.threshold}.tmp
+    head -3 {output.gtfOPRNs}
+    head -3 {output.gtfOpGs}
+    head -3 {output.gtfCLEAN}
     """
 
 gtfsoperons_samples=[]
