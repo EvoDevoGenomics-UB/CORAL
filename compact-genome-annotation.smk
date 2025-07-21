@@ -224,10 +224,8 @@ rule run_operon_annotation:
 rule run_final_annotation:
     input:
         gtfsclean = gtfsclean_samples ,
-        mergegtf = expand("annotations/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}.sorted.gtf",
-            specie=config["specie"], ref=config["stringtie_guide_opts"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        opgenesgtf = expand("annotations/{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}_OpGs.gtf",
-            specie=config["specie"], ref=config["stringtie_guide_opts"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"])
+        mergegtf = "annotations/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}.sorted.gtf",
+        opgenesgtf = "annotations/{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}_OpGs.gtf"
     output:
         cleanfinal = "annotations/{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}_mergeCLEAN.gtf" ,
         noOPRNs = "annotations/{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}_StringtieMerge.clean-noOPRNs.gtf" ,
