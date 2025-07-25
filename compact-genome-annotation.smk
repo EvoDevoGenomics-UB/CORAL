@@ -180,9 +180,19 @@ rule run_operon_finder_and_sanatizing:
     mkdir -p operon_finder_results
     {exeOpF} -f {input.gtf} --threshold {params.threshold} -o {params.name} --log {log}
     
-    head -3 {output.gtfOPRNs}
-    head -3 {output.gtfOpGs}
-    head -3 {output.gtfCLEAN}
+    awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
+    else print $0}}\' {params.name}_Operons_v9.t{params.threshold}.gtf > {params.name}_Operons_v9.t{params.threshold}.tmp ; \
+    gffread --sort-alpha -F -T -o {output.gtfOPRNs} {params.name}_Operons_v9.t{params.threshold}.tmp
+
+    awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
+    else print $0}}\' {params.name}_OperonGenes_v9.t{params.threshold}.gtf > {params.name}_OperonGenes_v9.t{params.threshold}.tmp ; \
+    gffread --sort-alpha -F -T -o {output.gtfOpGs} {params.name}_OperonGenes_v9.t{params.threshold}.tmp
+
+    awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
+    else print $0}}\' {params.name}_opCLEAN_v9.t{params.threshold}.gtf > {params.name}_opCLEAN_v9.t{params.threshold}.tmp ; \
+    gffread --sort-alpha -F -T -o {output.gtfCLEAN} {params.name}_opCLEAN_v9.t{params.threshold}.tmp
+
+    rm {params.name}*{params.threshold}.tmp
     """
 
 gtfsoperons_samples=[]
