@@ -85,20 +85,22 @@ contained_pairs = []
 for chrom, transcripts in chrom_transcripts.items():
     print(f"Processing {chrom} ({len(transcripts)} transcripts)...")
     logging.info(f"Processing {chrom} ({len(transcripts)} transcripts)...")
-    
     for idx, transcript in enumerate(transcripts, 1):
         if idx % max(1, len(transcripts) // 20) == 0:  # Print progress every 5% intervals
             progress = (idx / len(transcripts)) * 100
             print(f"Chrom {chrom} Progress: {progress:.1f}%", end="\r")
-        operon_gene_id = transcript.attributes['gene_id'][0]
-        if re.search("^OPRN", operon_gene_id):
+        trans_gene_id = transcript.attributes['gene_id'][0]
+        if re.search("^OPRN", trans_gene_id):
+            #print(f"{trans_gene_id}")
             for sub_transcript in transcripts:  # Now only compares within the same chromosome
-                opg_gene_id = sub_transcript.attributes['gene_id'][0]
-                if transcript.id == sub_transcript.id or operon_gene_id == opg_gene_id:
-                    continue # Skip when comparing itself
                 if transcript.strand == sub_transcript.strand:
+                    operon_gene_id = transcript.attributes['gene_id'][0]
+                    opg_gene_id = sub_transcript.attributes['gene_id'][0]
+                    if transcript.id == sub_transcript.id or operon_gene_id == opg_gene_id:
+                        continue # Skip when comparing itself
                     if (transcript.start <= (sub_transcript.start + 250 ) < (transcript.end+250)) and (transcript.end >= (sub_transcript.end - 250) > (transcript.start-250)):
                         contained_pairs.append((transcript.chrom, transcript.strand, transcript.id, operon_gene_id, sub_transcript.id, opg_gene_id))
+
 ######
 # Group operon/transcripts by chr and strand
 chr_to_operons = defaultdict(list)
@@ -124,7 +126,7 @@ operon_counts_def = Counter(operon for operon, _ in prefinal_pairs)
 out_operons = {operon for operon, count in operon_counts_def.items() if count < 2}
 # Filter out rows where the first column appears in the second column
 final_pairs_DEF = [pair for pair in prefinal_pairs if pair[0] not in out_operons]
-out_pairs_DEF = [pair for pair in prefinal_pairs if pair[0] in out_operons]
+out_pairs_DEF = [pair for pair in prefinal_pairs if pair not in final_pairs_DEF]
 
 ##########################
 # Write to output file
@@ -145,15 +147,32 @@ logging.info(f"Operon-Genes found saved to TSV file {output_file}")
 #Create the file with the right operon and operon genes.
 # Store all transcripts for gene_ids
 gene_to_trans_ids = []
+all_trans_ids = []
+removed_trans_ids = []
 operon_ids = {operon for operon, _ in final_pairs_DEF}
 contained_ids = {opg_gene_id for _, opg_gene_id in final_pairs_DEF}
 for transcript in db.features_of_type("transcript"):
     gene_id = transcript.attributes['gene_id'][0]
     if gene_id in operon_ids or gene_id in contained_ids:
-        gene_to_trans_ids.append(transcript.id)
+        all_trans_ids.append(transcript.id)
+        if gene_id in contained_ids:
+            gene_to_trans_ids.append(transcript.id)
+    else:
+        removed_trans_ids.append(transcript.id)
 
 # Define output GTF filenames
 operon_gtf_file = out_prefix + "_OPRNstatistics.clean.gtf"
+# Write operon transcripts to GTF
+with open(operon_gtf_file, "w") as operon_out:
+    for trans_id in all_trans_ids:
+        trans_feature = db[trans_id]
+        # Write the transcript feature
+        operon_out.write(str(trans_feature).replace('""', '"').replace('";"', '";') + ";\n")
+        # Write its child features (e.g., exons)
+        for feature in db.children(trans_id, featuretype='exon', order_by='start'):
+            operon_out.write(str(feature).replace('""', '') + "\n")
+# Define output GTF filenames
+operon_gtf_file = out_prefix + "_OPRNstatistics.OpGclean.gtf"
 # Write operon transcripts to GTF
 with open(operon_gtf_file, "w") as operon_out:
     for trans_id in gene_to_trans_ids:
@@ -163,6 +182,17 @@ with open(operon_gtf_file, "w") as operon_out:
         # Write its child features (e.g., exons)
         for feature in db.children(trans_id, featuretype='exon', order_by='start'):
             operon_out.write(str(feature).replace('""', '') + "\n")
+# Define output GTF filenames
+excuded_gtf_file = out_prefix + "_OPRNstatistics.excluded.gtf"
+# Write operon transcripts to GTF
+with open(excuded_gtf_file, "w") as excluded_out:
+    for trans_id in removed_trans_ids:
+        trans_feature = db[trans_id]
+        # Write the transcript feature
+        excluded_out.write(str(trans_feature).replace('""', '"').replace('";"', '";') + ";\n")
+        # Write its child features (e.g., exons)
+        for feature in db.children(trans_id, featuretype='exon', order_by='start'):
+            excluded_out.write(str(feature).replace('""', '') + "\n")
 
 ################
 # Counting the number of genes by operon
