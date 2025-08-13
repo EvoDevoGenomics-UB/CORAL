@@ -41,6 +41,8 @@ minimum_mapping_quality: 40
 stringtie_opts: "-M 0.75 -j 2 -a 15 "
 stringtie_guide_opts: ["REF","none"]
 stringtie_freq: 0.2
+stringtie_g: '-75'
+stringtie_merge_opts: "-F 0.6 -T 0.6 -c 5"
 
 #Operon finder options:
 operon_threshold: 1.0

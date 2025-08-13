@@ -180,9 +180,19 @@ rule run_operon_finder_and_sanatizing:
     mkdir -p operon_finder_results
     {exeOpF} -f {input.gtf} --threshold {params.threshold} -o {params.name} --log {log}
     
-    head -3 {output.gtfOPRNs}
-    head -3 {output.gtfOpGs}
-    head -3 {output.gtfCLEAN}
+    awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
+    else print $0}}\' {params.name}_Operons_v9.t{params.threshold}.gtf > {params.name}_Operons_v9.t{params.threshold}.tmp ; \
+    gffread --sort-alpha -F -T -o {output.gtfOPRNs} {params.name}_Operons_v9.t{params.threshold}.tmp
+
+    awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
+    else print $0}}\' {params.name}_OperonGenes_v9.t{params.threshold}.gtf > {params.name}_OperonGenes_v9.t{params.threshold}.tmp ; \
+    gffread --sort-alpha -F -T -o {output.gtfOpGs} {params.name}_OperonGenes_v9.t{params.threshold}.tmp
+
+    awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
+    else print $0}}\' {params.name}_opCLEAN_v9.t{params.threshold}.gtf > {params.name}_opCLEAN_v9.t{params.threshold}.tmp ; \
+    gffread --sort-alpha -F -T -o {output.gtfCLEAN} {params.name}_opCLEAN_v9.t{params.threshold}.tmp
+
+    rm {params.name}*{params.threshold}.tmp
     """
 
 gtfsoperons_samples=[]
@@ -205,15 +215,16 @@ rule run_operon_annotation:
         def_file = "annotations/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}.sorted_OPRNstatistics.clean.gtf"
     params:
         freq = config["stringtie_freq"],
+        g_param = config["stringtie_g"],
         name = "{specie}_guide{ref}_v{intron}_OFv9t{threshold}"
     log: "logs/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}.sorted_OPRNstatistics.log"
     conda: env_file
     shell:"""
     mkdir -p annotations
     (for i in {input.gtfsopgenes} ; do echo $i ; done) > annotations/List_merge_OpGs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}OFv9t{wildcards.threshold}.txt ; \
-    stringtie --merge -l OpG -f {params.freq} -F 0 -T 0 -c 0 -g '-50' -o {output.opgenesgtf} annotations/List_merge_OpGs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}OFv9t{wildcards.threshold}.txt ; \
+    stringtie --merge -l OpG -f {params.freq} -F 0 -T 0 -c 0 -g {params.g_param} -o {output.opgenesgtf} annotations/List_merge_OpGs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}OFv9t{wildcards.threshold}.txt ; \
     (for i in {input.gtfsoperons} ; do echo $i ; done) > annotations/List_merge_OPRNs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}OFv9t{wildcards.threshold}.txt ; \
-    stringtie --merge -l OPRN -f {params.freq} -F 0 -T 0 -c 0 -g 0 -o {output.operongtf} annotations/List_merge_OPRNs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}OFv9t{wildcards.threshold}.txt ; \
+    stringtie --merge -l OPRN -f {params.freq} -F 0 -T 0 -c 0 -g {params.g_param} -o {output.operongtf} annotations/List_merge_OPRNs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}OFv9t{wildcards.threshold}.txt ; \
     cat {output.operongtf} {output.opgenesgtf} > {params.name}.tmp.gtf ; \
     gffread --sort-alpha -F -T -o {output.merge} {params.name}.tmp.gtf ; rm {params.name}.tmp.gtf
 
@@ -224,31 +235,31 @@ rule run_operon_annotation:
 rule run_final_annotation:
     input:
         gtfsclean = gtfsclean_samples ,
-        mergegtf = expand("annotations/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}.sorted.gtf",
-            specie=config["specie"], ref=config["stringtie_guide_opts"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        opgenesgtf = expand("annotations/{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}_OpGs.gtf",
-            specie=config["specie"], ref=config["stringtie_guide_opts"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"])
+        mergegtf = "annotations/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}.sorted.gtf",
+        opgenesgtf = "annotations/{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}_OpGs.gtf"
     output:
         cleanfinal = "annotations/{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}_mergeCLEAN.gtf" ,
         noOPRNs = "annotations/{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}_StringtieMerge.clean-noOPRNs.gtf" ,
         andOPRNs = "annotations/{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}_StringtieMerge.clean-and-OPRNs.gtf"
     params:
-        freq = config["stringtie_freq"]
+        freq = config["stringtie_freq"],
+        g_param = config["stringtie_g"],
+        opts = config["stringtie_merge_opts"]
     conda: env_file
     shell:"""
     (for i in {input.gtfsclean} ; do echo $i ; done) > annotations/List_merge_opCLEAN.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}OFv9t{wildcards.threshold}.txt ; \
     stringtie --merge annotations/List_merge_opCLEAN.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}OFv9t{wildcards.threshold}.txt \
-     -l g -f {params.freq} -F 0.5 -T 0 -c 10 -g '-75' \
+     -l g -f {params.freq} {params.opts} -g {params.g_param}\
      -o {output.cleanfinal} ; \
     echo "  Final merge CLEAN done" ; \
     stringtie --merge {output.cleanfinal} \
      -G {input.opgenesgtf} \
-     -l g -f {params.freq} -F 0 -T 0 -c 0 -g '-75' \
+     -l g -f {params.freq} -F 0 -T 0 -c 0 -g {params.g_param} \
      -o {output.noOPRNs} ; \
     echo "  Final CLEAN-noOPRNs done" ; \
     stringtie --merge {output.cleanfinal} \
      -G {input.mergegtf} \
-     -l g -f {params.freq} -F 0 -T 0 -c 0 -g '-75' \
+     -l g -f {params.freq} -F 0 -T 0 -c 0 -g {params.g_param} \
      -o {output.andOPRNs} ; \
     echo "  Final CLEAN-and-OPRNs done"
     """
