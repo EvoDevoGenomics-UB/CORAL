@@ -7,4 +7,6 @@ Then creates non-assembled annotation for each samples using <i>Stringtie (v3.0)
 
 Those sets are merge together to generate the final consensus annotation. From the annotation no containg operons there is selected the longest annotation for each gene (<i>Longest_transcript_filter.py</i>) to generate a fasta file, which is use to asses the quality of the annotation with <i>BUSCO (v5.8)</i>. The transcriptome obtained from the consensus annotations are also assed with <i>BUSCO</i>.
 
-<img width="1795/2" height="2376/2" alt="Figure1" src="https://github.com/user-attachments/assets/1e2ed9b4-c782-410e-8d5b-5aadafac6791" />
+Schematic pipeline:
+
+<img width="650" height="900" alt="Figure1" src="https://github.com/user-attachments/assets/1e2ed9b4-c782-410e-8d5b-5aadafac6791" />
