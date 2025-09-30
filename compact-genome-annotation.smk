@@ -8,7 +8,7 @@ WORKDIR = path.join(path.dirname(workflow.snakefile),config["workdir_top"], conf
 SNAKEDIR = path.dirname(workflow.snakefile)
 
 in_genome = config["genome_fasta"]
-env_file = "compact-genome-annotation-env_NEW.yml"
+env_file = "compact-genome-annotation-env.yml"
 REF = config["reference_annot"]
 exeOpF = "./operon-finder"
 #exeOpF = "python /data2/cristian/ntorres2/LongRead_RNAseq/compact-genome-annotation/scripts/operon_finder_v9.7.py"
