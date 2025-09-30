@@ -1,21 +1,21 @@
 import os
 from os import path
 
-configfile: path.join(path.dirname(workflow.snakefile),"compact-genome-annotation-config_NEWold.yaml")
+configfile: path.join(path.dirname(workflow.snakefile),"compact-genome-annotation-config_NEW.yaml")
 workdir: path.join(config["workdir_top"], config["pipeline"])
 
 WORKDIR = path.join(path.dirname(workflow.snakefile),config["workdir_top"], config["pipeline"])
 SNAKEDIR = path.dirname(workflow.snakefile)
-exeOpF = "python {SNAKEDIR}/scripts/operon_finder_v9.7.py"
 
 in_genome = config["genome_fasta"]
 env_file = "compact-genome-annotation-env.yml"
 REF = config["reference_annot"]
-exeOpF = path.join(path.dirname(workflow.snakefile),"scripts/operon_finder_v9.7.py")
+exeOpF = "./operon-finder"
 
-rule_all_input_list=["versions.txt",
+rule_all_input_list=["versions.txt","operon-finder",
         expand("logs/{specie}_{sample}_stats_input_reads.txt", specie=config["specie"], sample=config["samples"]),
         expand("alignments/{specie}_{sample}_reads_aln_v{intron}.sorted.bam", specie=config["specie"], sample=config["samples"], intron=config["minimap2_max_intron"]),
+        expand("alignments/{specie}_{sample}_reads_aln_sorted_v{intron}.stats.txt", specie=config["specie"], sample=config["samples"], intron=config["minimap2_max_intron"]),
         expand("sample_annotations/{specie}_{sample}_guide{ref}_v{intron}.gtf", specie=config["specie"], sample=config["samples"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"]),
         expand("operon_finder_results/{specie}_guide{ref}_{sample}_v{intron}_opCLEAN_v9.t{threshold}.clean.gtf", specie=config["specie"], sample=config["samples"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("annotations/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}.sorted.gtf", specie=config["specie"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
@@ -27,6 +27,7 @@ rule_all_input_list=["versions.txt",
         expand("busco_analysis/{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}_StringtieMerge.clean-and-OPRNs.fasta", specie=config["specie"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("busco_analysis/BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}_andOPRNs", specie=config["specie"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("busco_analysis/BUSCO_results_all_summaries_{specie}_guide{ref}_v{intron}_OFv9t{threshold}", specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+        expand("busco_analysis/BUSCO_trans_{specie}_LRannot_REF", specie=config["specie"]),
         expand("logs/{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}_operon_finder_run_FINAL.log", specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]) ]
 
 if config["run_gffcomapre"] == True :
@@ -47,8 +48,9 @@ rule build_operon_finder:
     shell: """
     cd {SNAKEDIR}/scripts/operon-finder-rust
     cargo build --release
-    mv {SNAKEDIR}/scripts/operon-finder-rust/target/release/{output} {SNAKEDIR}/scripts/
-    {SNAKEDIR}/scripts/{output} --help
+    cd {WORKDIR}
+    cp -r {SNAKEDIR}/scripts/operon-finder-rust/target/release/{output} {WORKDIR}
+    {WORKDIR}/{output} --help
     """
 
 ## Check input files
@@ -87,7 +89,8 @@ rule build_minimap_index:
 rule run_minimap2:
     input:
         index = "index/{specie}_genome_index.mmi",
-        fastq = config["data_dir"] + "{sample}" + config["data_sufix"]
+        fastq = config["data_dir"] + "{sample}" + config["data_sufix"],
+        genome_fai = in_genome + ".fai"
     output:
         bam = "alignments/{specie}_{sample}_reads_aln_v{intron}.sorted.bam"
     params:
@@ -99,18 +102,24 @@ rule run_minimap2:
     conda: env_file
     log: "logs/{specie}_{sample}_v{intron}_minimap2_run.log"
     shell: """
-    (minimap2 -t {threads} {params.opts} -G {params.max_intron} {params.opts} {input.index} {input.fastq} > {params.name}.sam ; \
-    head -2 {params.name}.sam ) 2> {log}
-    echo \"{params.name}.sam created\"
-    samtools view {params.name}.sam -@ {threads} -O BAM -o {params.name}.bam
-    echo \"{params.name}.bam created\"
-    seqkit bam -j {threads} -q {params.qual} -x {params.name}.bam > {params.name}.clean.sam
-    echo \"{params.name}.clean.sam created\"
-    rm {params.name}.sam
-    samtools sort -@ {threads} -O BAM -o {output.bam} {params.name}.clean.sam
+    if [ -f "{params.name}.sam" ]; then
+        echo \"{params.name}.sam already created\"
+    else
+        (minimap2 -t {threads} {params.opts} -G {params.max_intron} {input.index} {input.fastq} > {params.name}.sam ; \
+        head -2 {params.name}.sam ) 2> {log}
+        echo \"Minimap2 alignment done: {params.name}.sam created\"
+    fi
+    #samtools view -h -q {params.qual} -o {params.name}.clean.sam -@ {threads} {params.name}.sam
+    #samtools sort -@ {threads} -O BAM -o {output.bam} {params.name}.clean.sam
+
+    samtools view -h -bt {input.index} {params.name}.sam | seqkit bam -j {threads} -q {params.qual} -x -\
+    | samtools sort -@ {threads} -O BAM -o {output.bam} -;
+
+    echo \"{output.bam} created\"
     samtools index {output.bam}
-    rm {params.name}.clean.sam
+    #rm {params.name}.clean.sam
     """
+    
 rule run_aling_stats:
     input:
         bam = "alignments/{specie}_{sample}_reads_aln_v{intron}.sorted.bam"
@@ -163,6 +172,7 @@ rule do_operon_annotations:
 #Python script operon_finder
 rule run_operon_finder_and_sanatizing:
     input:
+        operon_finder = rules.build_operon_finder.output,
         gtf = rules.run_stringtie_sample_annotations.output.gtf
     output:
         file = "operon_finder_results/{specie}_guide{ref}_{sample}_v{intron}_operons_found_v9.t{threshold}.tsv",
@@ -211,53 +221,59 @@ rule run_operon_annotation:
         operongtf = "annotations/{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}_OPRNs.gtf",
         opgenesgtf = "annotations/{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}_OpGs.gtf",
         merge = "annotations/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}.sorted.gtf",
-        def_file = "annotations/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}.sorted_OPRNstatistics.clean.gtf"
+        def_file = "annotations/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}.sorted_OPRNstatistics.clean.gtf",
+        opgenesgtfCLEAN = "annotations/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}.sorted_OPRNstatistics.OpGclean.gtf",
+        excluded_file = "annotations/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}.sorted_OPRNstatistics.excluded.gtf"
     params:
-        freq = config["stringtie_freq"],
         name = "{specie}_guide{ref}_v{intron}_OFv9t{threshold}"
     log: "logs/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}.sorted_OPRNstatistics.log"
     conda: env_file
     shell:"""
     mkdir -p annotations
     (for i in {input.gtfsopgenes} ; do echo $i ; done) > annotations/List_merge_OpGs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}OFv9t{wildcards.threshold}.txt ; \
-    stringtie --merge -l OpG -f {params.freq} -F 0 -T 0 -c 0 -g '-50' -o {output.opgenesgtf} annotations/List_merge_OpGs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}OFv9t{wildcards.threshold}.txt ; \
+    stringtie --merge -l OpG -f 0 -F 0 -T 0 -c 0 -g '-150' -o {output.opgenesgtf} annotations/List_merge_OpGs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}OFv9t{wildcards.threshold}.txt ; \
+    grep 'StringTie	transcript' {output.opgenesgtf} | wc -l ; \
     (for i in {input.gtfsoperons} ; do echo $i ; done) > annotations/List_merge_OPRNs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}OFv9t{wildcards.threshold}.txt ; \
-    stringtie --merge -l OPRN -f {params.freq} -F 0 -T 0 -c 0 -g 0 -o {output.operongtf} annotations/List_merge_OPRNs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}OFv9t{wildcards.threshold}.txt ; \
+    stringtie --merge -l OPRN -f 0 -F 0 -T 0 -c 0 -g 0 -o {output.operongtf} annotations/List_merge_OPRNs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}OFv9t{wildcards.threshold}.txt ; \
     cat {output.operongtf} {output.opgenesgtf} > {params.name}.tmp.gtf ; \
     gffread --sort-alpha -F -T -o {output.merge} {params.name}.tmp.gtf ; rm {params.name}.tmp.gtf
 
     python3 {SNAKEDIR}/scripts/operon_statistics.py -f {output.merge} --log {log}
+    grep 'StringTie	transcript' {output.opgenesgtfCLEAN} | wc -l ; \
     """
 
 #Create final concensus annotations
 rule run_final_annotation:
     input:
         gtfsclean = gtfsclean_samples ,
-        mergegtf = expand("annotations/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}.sorted.gtf",
-            specie=config["specie"], ref=config["stringtie_guide_opts"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        opgenesgtf = expand("annotations/{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}_OpGs.gtf",
-            specie=config["specie"], ref=config["stringtie_guide_opts"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"])
+        #mergegtf = "annotations/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}.sorted.gtf",
+        mergegtf = rules.run_operon_annotation.output.def_file,
+        excluded_file = rules.run_operon_annotation.output.excluded_file,
+        opgenesgtf = rules.run_operon_annotation.output.opgenesgtfCLEAN
     output:
         cleanfinal = "annotations/{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}_mergeCLEAN.gtf" ,
         noOPRNs = "annotations/{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}_StringtieMerge.clean-noOPRNs.gtf" ,
         andOPRNs = "annotations/{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}_StringtieMerge.clean-and-OPRNs.gtf"
     params:
-        freq = config["stringtie_freq"]
+        freq = config["stringtie_freq"],
+        g_param = config["stringtie_g"],
+        opts = config["stringtie_merge_opts"]
     conda: env_file
     shell:"""
     (for i in {input.gtfsclean} ; do echo $i ; done) > annotations/List_merge_opCLEAN.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}OFv9t{wildcards.threshold}.txt ; \
     stringtie --merge annotations/List_merge_opCLEAN.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}OFv9t{wildcards.threshold}.txt \
-     -l g -f {params.freq} -F 0.5 -T 0 -c 10 -g '-75' \
+     -l g -f {params.freq} {params.opts} -g {params.g_param} \
      -o {output.cleanfinal} ; \
     echo "  Final merge CLEAN done" ; \
-    stringtie --merge {output.cleanfinal} \
+    grep 'StringTie	transcript' {output.cleanfinal} | wc -l ; \
+    stringtie --merge {output.cleanfinal} {input.excluded_file} \
      -G {input.opgenesgtf} \
-     -l g -f {params.freq} -F 0 -T 0 -c 0 -g '-75' \
+     -l g -f {params.freq} -F 0 -T 0 -c 0 -g {params.g_param} \
      -o {output.noOPRNs} ; \
     echo "  Final CLEAN-noOPRNs done" ; \
-    stringtie --merge {output.cleanfinal} \
+    stringtie --merge {output.cleanfinal} {input.excluded_file} \
      -G {input.mergegtf} \
-     -l g -f {params.freq} -F 0 -T 0 -c 0 -g '-75' \
+     -l g -f {params.freq} -F 0 -T 0 -c 0 -g {params.g_param} \
      -o {output.andOPRNs} ; \
     echo "  Final CLEAN-and-OPRNs done"
     """
@@ -282,7 +298,8 @@ rule do_busco_analyses:
         expand("busco_analysis/BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}_andOPRNs",
             specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("busco_analysis/BUSCO_results_all_summaries_{specie}_guide{ref}_v{intron}_OFv9t{threshold}",
-            specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"])
+            specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+        expand("busco_analysis/BUSCO_trans_{specie}_LRannot_REF", specie=config["specie"])
         
 rule run_longest_trans_filter:
     input:
@@ -340,11 +357,29 @@ rule run_busco_analyses:
         busco -i {input.fa_andOPRNs} -l {input.lin_dir} -o {output.out_andOPRNs} -m transcriptome
     """
 
+rule run_busco_reference_annot:
+    input:
+        lin_dir = rules.busco_download_lineage.output.lin_dir ,
+        genome = in_genome ,
+        ref_annot = config["reference_annot"]
+    output:
+        fasta = "busco_analysis/{specie}_LRannot_REF.fasta" ,
+        out_ref = directory("busco_analysis/BUSCO_trans_{specie}_LRannot_REF")
+    params:
+        lineage = config["lineages"]
+    conda: env_file
+    shell:"""
+        mkdir -p busco_analysis
+        gffread -g {input.genome} -w {output.fasta} {input.ref_annot}
+        busco -i {output.fasta} -l {input.lin_dir} -o {output.out_ref} -m transcriptome
+    """
+
 rule busco_plot:
     input:
         out_longtrans = "busco_analysis/BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}_noOPRNs_longest_trans_only",
         out_noOPRNs = "busco_analysis/BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}_noOPRNs",
-        out_andOPRNs = "busco_analysis/BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}_andOPRNs"
+        out_andOPRNs = "busco_analysis/BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}_andOPRNs",
+        out_ref = "busco_analysis/BUSCO_trans_{specie}_LRannot_REF"
     output:
         out_dir = directory("busco_analysis/BUSCO_results_all_summaries_{specie}_guide{ref}_v{intron}_OFv9t{threshold}")
     conda: env_file
@@ -353,6 +388,7 @@ rule busco_plot:
         cp {WORKDIR}{input.out_longtrans}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.noOPRNs_longtrans.txt
         cp {WORKDIR}{input.out_noOPRNs}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.noOPRNs.txt
         cp {WORKDIR}{input.out_andOPRNs}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.andOPRNs.txt
+        cp {WORKDIR}{input.out_ref}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.REF.txt
         python3 {SNAKEDIR}/scripts/generate_plot.py -wd {output.out_dir}
         """
 
@@ -372,6 +408,7 @@ rule run_recover_coverage:
     stringtie -G {input.gtf2} -e -o {output.gtfFinal2} {input.bams}
     stringtie -G {input.gtf} -e -o {output.gtfFinal} {input.bams}
     """
+
 rule run_final_operon_search:
     input:
         gtf = rules.run_recover_coverage.output.gtfFinal
@@ -406,7 +443,7 @@ rule run_gffcompare:
     conda: env_file
     shell:"""
     if [[ {input.ref} == "" ]] ; then
-        echo \"Error: No reference annoation provided.\" >&2
+        echo \"Error: No reference annotation provided.\" >&2
         exit 1
     else
         mkdir -p {output.gffcmp_dir}
