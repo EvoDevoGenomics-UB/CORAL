@@ -1,16 +1,18 @@
 import os
 from os import path
 
-configfile: path.join(path.dirname(workflow.snakefile),"compact-genome-annotation-config_NEW.yaml")
+configfile: path.join(path.dirname(workflow.snakefile),"compact-genome-annotation-config.yaml")
 workdir: path.join(config["workdir_top"], config["pipeline"])
 
 WORKDIR = path.join(path.dirname(workflow.snakefile),config["workdir_top"], config["pipeline"])
 SNAKEDIR = path.dirname(workflow.snakefile)
 
 in_genome = config["genome_fasta"]
-env_file = "compact-genome-annotation-env.yml"
+env_file = "compact-genome-annotation-env_NEW.yml"
 REF = config["reference_annot"]
+sampleREF = config["reference_annot2"]
 exeOpF = "./operon-finder"
+#exeOpF = "python /data2/cristian/ntorres2/LongRead_RNAseq/compact-genome-annotation/scripts/operon_finder_v9.7.py"
 
 rule_all_input_list=["versions.txt","operon-finder",
         expand("logs/{specie}_{sample}_stats_input_reads.txt", specie=config["specie"], sample=config["samples"]),
@@ -85,7 +87,9 @@ rule build_minimap_index:
     threads: config["threads"]
     shell:"""
         minimap2 -t {threads} {params.opts} -I 1000G -d {output.index} {input.genome}
+        samtools faidx {input.genome}
     """
+
 rule run_minimap2:
     input:
         index = "index/{specie}_genome_index.mmi",
@@ -149,9 +153,13 @@ rule run_stringtie_sample_annotations:
     shell:"""
         mkdir -p sample_annotations
         input_guide=\"{wildcards.ref}\"
+        stringtie --version
         if [ $input_guide == "REF" ] ; then
             echo \"Comand: stringtie --rf -L -R -p {threads} {params.opts} -G {REF} -o {output.gtf} {input.bam}\"
             stringtie --rf -L -R -p {threads} {params.opts} -G {REF} -o {output.gtf} {input.bam}
+            echo \"Stringtie {wildcards.ref} guided gtf created: {output.gtf}\"
+        elif [ $input_guide == "C04" ]; then
+            stringtie --rf -L -R -p {threads} {params.opts} -G {sampleREF} -o {output.gtf} {input.bam}
             echo \"Stringtie {wildcards.ref} guided gtf created: {output.gtf}\"
         else
             echo \"Comand: stringtie --rf -L -R -p {threads} {params.opts} -o {output.gtf} {input.bam}\"
@@ -225,13 +233,14 @@ rule run_operon_annotation:
         opgenesgtfCLEAN = "annotations/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}.sorted_OPRNstatistics.OpGclean.gtf",
         excluded_file = "annotations/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}.sorted_OPRNstatistics.excluded.gtf"
     params:
+        g_param = config["stringtie_g"],
         name = "{specie}_guide{ref}_v{intron}_OFv9t{threshold}"
     log: "logs/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}.sorted_OPRNstatistics.log"
     conda: env_file
     shell:"""
     mkdir -p annotations
     (for i in {input.gtfsopgenes} ; do echo $i ; done) > annotations/List_merge_OpGs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}OFv9t{wildcards.threshold}.txt ; \
-    stringtie --merge -l OpG -f 0 -F 0 -T 0 -c 0 -g '-150' -o {output.opgenesgtf} annotations/List_merge_OpGs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}OFv9t{wildcards.threshold}.txt ; \
+    stringtie --merge -l OpG -f 0 -F 0 -T 0 -c 0 -g '-60' -o {output.opgenesgtf} annotations/List_merge_OpGs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}OFv9t{wildcards.threshold}.txt ; \
     grep 'StringTie	transcript' {output.opgenesgtf} | wc -l ; \
     (for i in {input.gtfsoperons} ; do echo $i ; done) > annotations/List_merge_OPRNs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}OFv9t{wildcards.threshold}.txt ; \
     stringtie --merge -l OPRN -f 0 -F 0 -T 0 -c 0 -g 0 -o {output.operongtf} annotations/List_merge_OPRNs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}OFv9t{wildcards.threshold}.txt ; \
