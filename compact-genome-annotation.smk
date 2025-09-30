@@ -10,7 +10,6 @@ SNAKEDIR = path.dirname(workflow.snakefile)
 in_genome = config["genome_fasta"]
 env_file = "compact-genome-annotation-env_NEW.yml"
 REF = config["reference_annot"]
-sampleREF = config["reference_annot2"]
 exeOpF = "./operon-finder"
 #exeOpF = "python /data2/cristian/ntorres2/LongRead_RNAseq/compact-genome-annotation/scripts/operon_finder_v9.7.py"
 
@@ -157,9 +156,6 @@ rule run_stringtie_sample_annotations:
         if [ $input_guide == "REF" ] ; then
             echo \"Comand: stringtie --rf -L -R -p {threads} {params.opts} -G {REF} -o {output.gtf} {input.bam}\"
             stringtie --rf -L -R -p {threads} {params.opts} -G {REF} -o {output.gtf} {input.bam}
-            echo \"Stringtie {wildcards.ref} guided gtf created: {output.gtf}\"
-        elif [ $input_guide == "C04" ]; then
-            stringtie --rf -L -R -p {threads} {params.opts} -G {sampleREF} -o {output.gtf} {input.bam}
             echo \"Stringtie {wildcards.ref} guided gtf created: {output.gtf}\"
         else
             echo \"Comand: stringtie --rf -L -R -p {threads} {params.opts} -o {output.gtf} {input.bam}\"
