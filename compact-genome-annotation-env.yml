@@ -14,5 +14,6 @@ dependencies:
     - busco==5.8.2
     - pandas
     - gffcompare
+    - rust
 #    - pychopper
 #    - "nanoporetech::pychopper"
