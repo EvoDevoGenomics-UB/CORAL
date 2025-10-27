@@ -33,6 +33,9 @@ rule_all_input_list=["versions.txt","operon-finder",
 
 if config["run_gffcomapre"] == True :
     rule_all_input_list.append(expand("Gffcompare_results/{specie}_LRannot_guide{ref}_v{intron}_OFr1t{threshold}",specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]))        
+
+if config["run_expression_matrix"] == True :
+    rule_all_input_list.append(expand("Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}_StringtieMerge.clean-and-OPRNs/transcript_count_matrix.csv",specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]))        
                 
 rule all:
     input:
@@ -465,4 +468,48 @@ rule run_gffcompare:
             echo "File '$i.gffcmp_trans_types.txt' created."
         done
     fi
+    """
+
+###For expression amtrix creation:
+bam_samples=[]
+for SAMPLE in config["samples"]:
+    bam_samples.append("alignments/{{specie}}_{}_reads_aln_v{{intron}}.sorted.bam".format(SAMPLE))
+
+rule run_expression_matrix:
+    input:
+        gtf = rules.run_final_annotation.output.andOPRNs ,
+        bams = bam_samples
+    output:
+        out_file_t = "Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}_StringtieMerge.clean-and-OPRNs/gene_count_matrix.csv",
+        out_file_g = "Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}_StringtieMerge.clean-and-OPRNs/transcript_count_matrix.csv"
+    params:
+        result_dir = directory("Expression_matrix/{specie}"),
+        samples = config["samples"]
+    conda: env_file
+    shell:"""
+    inputGTF=$(basename "{input.gtf}" .gtf)
+    echo "Input GTF is: $inputGTF.gtf"
+    inputBAM=$(for file in {input.bams} ; do basename "$file" "_reads_aln_v{wildcards.intron}.sorted.bam" ; done)
+    echo "Samples to include are:\n$inputBAM "
+
+    # Create output directory for Stringtie counts
+    mkdir -p "{params.result_dir}"
+    mkdir -p "{params.result_dir}/$inputGTF"
+
+    # Create counts for each sample in the directory
+    for sample in {params.samples} ; do
+        output_dir="{params.result_dir}/$inputGTF/$sample"
+        output_gtf="$output_dir/$sample.gtf"
+        mkdir -p "$output_dir"
+        stringtie -eB -G {input.gtf} -p 8 -o "$output_gtf" "alignments/{wildcards.specie}_${{sample}}_reads_aln_v{wildcards.intron}.sorted.bam"
+    done
+
+    # Create the list file for samples
+    echo $inputBAM | sed 's/ /\n/g' > a.tmp
+    ls "{params.result_dir}/$inputGTF/*/*.gtf > b.tmp
+    paste a.tmp b.tmp > {params.result_dir}/$inputGTF/ALL_sample_list.txt
+
+    # Create final table with all counts
+    python {SNAKEDIR}/scripts/prepDE.py3 -i "$SAMPLE_LIST" -g {output.out_file_g} -t {output.out_file_t}
+
     """
