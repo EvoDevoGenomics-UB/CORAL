@@ -154,12 +154,12 @@ rule run_stringtie_sample_annotations:
         input_guide=\"{wildcards.ref}\"
         stringtie --version
         if [ $input_guide == "REF" ] ; then
-            echo \"Comand: stringtie --rf -L -R -p {threads} {params.opts} -G {REF} -o {output.gtf} {input.bam}\"
-            stringtie --rf -L -R -p {threads} {params.opts} -G {REF} -o {output.gtf} {input.bam}
+            echo \"Comand: stringtie --fr -L -R -p {threads} {params.opts} -G {REF} -o {output.gtf} {input.bam}\"
+            stringtie --fr -L -R -p {threads} {params.opts} -G {REF} -o {output.gtf} {input.bam}
             echo \"Stringtie {wildcards.ref} guided gtf created: {output.gtf}\"
         else
-            echo \"Comand: stringtie --rf -L -R -p {threads} {params.opts} -o {output.gtf} {input.bam}\"
-            stringtie --rf -L -R -p {threads} {params.opts} -o {output.gtf} {input.bam} ; \
+            echo \"Comand: stringtie --fr -L -R -p {threads} {params.opts} -o {output.gtf} {input.bam}\"
+            stringtie --fr -L -R -p {threads} {params.opts} -o {output.gtf} {input.bam} ; \
             echo \"Stringtie no-guide no-assembly gtf created: {output.gtf}\"
         fi
         """
