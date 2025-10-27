@@ -470,7 +470,7 @@ rule run_gffcompare:
     fi
     """
 
-###For expression amtrix creation:
+###For expression matrix creation:
 bam_samples=[]
 for SAMPLE in config["samples"]:
     bam_samples.append("alignments/{{specie}}_{}_reads_aln_v{{intron}}.sorted.bam".format(SAMPLE))
@@ -480,8 +480,8 @@ rule run_expression_matrix:
         gtf = rules.run_final_annotation.output.andOPRNs ,
         bams = bam_samples
     output:
-        out_file_t = "Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}_StringtieMerge.clean-and-OPRNs/gene_count_matrix.csv",
-        out_file_g = "Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}_StringtieMerge.clean-and-OPRNs/transcript_count_matrix.csv"
+        out_file_t = "Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_OFr1t{threshold}_StringtieMerge.clean-and-OPRNs/gene_count_matrix.csv",
+        out_file_g = "Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_OFr1t{threshold}_StringtieMerge.clean-and-OPRNs/transcript_count_matrix.csv"
     params:
         result_dir = directory("Expression_matrix/{specie}"),
         samples = config["samples"]
