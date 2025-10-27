@@ -486,11 +486,12 @@ rule run_expression_matrix:
         result_dir = directory("Expression_matrix/{specie}"),
         samples = config["samples"]
     conda: env_file
+    threads: config["threads"]
     shell:"""
     inputGTF=$(basename "{input.gtf}" .gtf)
     echo "Input GTF is: $inputGTF.gtf"
     inputBAM=$(for file in {input.bams} ; do basename "$file" "_reads_aln_v{wildcards.intron}.sorted.bam" ; done)
-    echo "Samples to include are:\n$inputBAM "
+    echo "Samples to include are: $inputBAM"
 
     # Create output directory for Stringtie counts
     mkdir -p "{params.result_dir}"
@@ -498,18 +499,27 @@ rule run_expression_matrix:
 
     # Create counts for each sample in the directory
     for sample in {params.samples} ; do
-        output_dir="{params.result_dir}/$inputGTF/$sample"
-        output_gtf="$output_dir/$sample.gtf"
+        output_dir="{params.result_dir}/$inputGTF/${{sample}}"
+        output_gtf="$output_dir/${{sample}}.gtf"
+
         mkdir -p "$output_dir"
-        stringtie -eB -G {input.gtf} -p 8 -o "$output_gtf" "alignments/{wildcards.specie}_${{sample}}_reads_aln_v{wildcards.intron}.sorted.bam"
+        # Check if the GTF file already exists
+        if [ -f "$output_gtf" ]; then
+            echo "GTF file for ${{sample}} already exists. Skipping..."
+            continue
+        fi
+
+        stringtie -eB -G {input.gtf} -p {threads} -o "$output_gtf" "alignments/{wildcards.specie}_${{sample}}_reads_aln_v{wildcards.intron}.sorted.bam"
     done
 
     # Create the list file for samples
-    echo $inputBAM | sed 's/ /\n/g' > a.tmp
-    ls "{params.result_dir}/$inputGTF/*/*.gtf > b.tmp
-    paste a.tmp b.tmp > {params.result_dir}/$inputGTF/ALL_sample_list.txt
+    ls {WORKDIR}{params.result_dir}/${{inputGTF}}/*/*.gtf > b.tmp ; 
+    echo $inputBAM | tr ' ' '\n' > a.tmp ;
+    paste a.tmp b.tmp > {params.result_dir}/${{inputGTF}}/ALL_sample_list.txt
+    rm a.tmp b.tmp
 
-    # Create final table with all counts
-    python {SNAKEDIR}/scripts/prepDE.py3 -i "$SAMPLE_LIST" -g {output.out_file_g} -t {output.out_file_t}
+    # Create final matrix with all counts
+    echo "Create final matrix with all counts"
+    python {SNAKEDIR}/scripts/prepDE.py3 -i {params.result_dir}/${{inputGTF}}/ALL_sample_list.txt -g {output.out_file_g} -t {output.out_file_t}
 
     """
