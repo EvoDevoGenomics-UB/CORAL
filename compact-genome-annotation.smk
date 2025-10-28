@@ -480,8 +480,8 @@ rule run_expression_matrix:
         gtf = rules.run_final_annotation.output.andOPRNs ,
         bams = bam_samples
     output:
-        out_file_t = "Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_OFr1t{threshold}_StringtieMerge.clean-and-OPRNs/gene_count_matrix.csv",
-        out_file_g = "Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_OFr1t{threshold}_StringtieMerge.clean-and-OPRNs/transcript_count_matrix.csv"
+        out_file_g = "Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_OFr1t{threshold}_StringtieMerge.clean-and-OPRNs/gene_count_matrix.csv",
+        out_file_t = "Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_OFr1t{threshold}_StringtieMerge.clean-and-OPRNs/transcript_count_matrix.csv"
     params:
         result_dir = directory("Expression_matrix/{specie}"),
         samples = config["samples"]
