@@ -33,6 +33,9 @@ rule_all_input_list=["versions.txt","operon-finder",
 
 if config["run_gffcomapre"] == True :
     rule_all_input_list.append(expand("Gffcompare_results/{specie}_LRannot_guide{ref}_v{intron}_OFr1t{threshold}",specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]))        
+
+if config["run_expression_matrix"] == True :
+    rule_all_input_list.append(expand("Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_OFv9t{threshold}_StringtieMerge.clean-and-OPRNs/transcript_count_matrix.csv",specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]))        
                 
 rule all:
     input:
@@ -154,12 +157,12 @@ rule run_stringtie_sample_annotations:
         input_guide=\"{wildcards.ref}\"
         stringtie --version
         if [ $input_guide == "REF" ] ; then
-            echo \"Comand: stringtie --rf -L -R -p {threads} {params.opts} -G {REF} -o {output.gtf} {input.bam}\"
-            stringtie --rf -L -R -p {threads} {params.opts} -G {REF} -o {output.gtf} {input.bam}
+            echo \"Comand: stringtie --fr -L -R -p {threads} {params.opts} -G {REF} -o {output.gtf} {input.bam}\"
+            stringtie --fr -L -R -p {threads} {params.opts} -G {REF} -o {output.gtf} {input.bam}
             echo \"Stringtie {wildcards.ref} guided gtf created: {output.gtf}\"
         else
-            echo \"Comand: stringtie --rf -L -R -p {threads} {params.opts} -o {output.gtf} {input.bam}\"
-            stringtie --rf -L -R -p {threads} {params.opts} -o {output.gtf} {input.bam} ; \
+            echo \"Comand: stringtie --fr -L -R -p {threads} {params.opts} -o {output.gtf} {input.bam}\"
+            stringtie --fr -L -R -p {threads} {params.opts} -o {output.gtf} {input.bam} ; \
             echo \"Stringtie no-guide no-assembly gtf created: {output.gtf}\"
         fi
         """
@@ -465,4 +468,58 @@ rule run_gffcompare:
             echo "File '$i.gffcmp_trans_types.txt' created."
         done
     fi
+    """
+
+###For expression matrix creation:
+bam_samples=[]
+for SAMPLE in config["samples"]:
+    bam_samples.append("alignments/{{specie}}_{}_reads_aln_v{{intron}}.sorted.bam".format(SAMPLE))
+
+rule run_expression_matrix:
+    input:
+        gtf = rules.run_final_annotation.output.andOPRNs ,
+        bams = bam_samples
+    output:
+        out_file_g = "Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_OFr1t{threshold}_StringtieMerge.clean-and-OPRNs/gene_count_matrix.csv",
+        out_file_t = "Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_OFr1t{threshold}_StringtieMerge.clean-and-OPRNs/transcript_count_matrix.csv"
+    params:
+        result_dir = directory("Expression_matrix/{specie}"),
+        samples = config["samples"]
+    conda: env_file
+    threads: config["threads"]
+    shell:"""
+    inputGTF=$(basename "{input.gtf}" .gtf)
+    echo "Input GTF is: $inputGTF.gtf"
+    inputBAM=$(for file in {input.bams} ; do basename "$file" "_reads_aln_v{wildcards.intron}.sorted.bam" ; done)
+    echo "Samples to include are: $inputBAM"
+
+    # Create output directory for Stringtie counts
+    mkdir -p "{params.result_dir}"
+    mkdir -p "{params.result_dir}/$inputGTF"
+
+    # Create counts for each sample in the directory
+    for sample in {params.samples} ; do
+        output_dir="{params.result_dir}/$inputGTF/${{sample}}"
+        output_gtf="$output_dir/${{sample}}.gtf"
+
+        mkdir -p "$output_dir"
+        # Check if the GTF file already exists
+        if [ -f "$output_gtf" ]; then
+            echo "GTF file for ${{sample}} already exists. Skipping..."
+            continue
+        fi
+
+        stringtie -eB -G {input.gtf} -p {threads} -o "$output_gtf" "alignments/{wildcards.specie}_${{sample}}_reads_aln_v{wildcards.intron}.sorted.bam"
+    done
+
+    # Create the list file for samples
+    ls {WORKDIR}{params.result_dir}/${{inputGTF}}/*/*.gtf > b.tmp ; 
+    echo $inputBAM | tr ' ' '\n' > a.tmp ;
+    paste a.tmp b.tmp > {params.result_dir}/${{inputGTF}}/ALL_sample_list.txt
+    rm a.tmp b.tmp
+
+    # Create final matrix with all counts
+    echo "Create final matrix with all counts"
+    python {SNAKEDIR}/scripts/prepDE.py3 -i {params.result_dir}/${{inputGTF}}/ALL_sample_list.txt -g {output.out_file_g} -t {output.out_file_t}
+
     """

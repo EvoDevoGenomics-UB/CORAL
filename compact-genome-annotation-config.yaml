@@ -43,6 +43,9 @@ stringtie_merge_opts: "-F 0.5 -T 0 -c 2"
 # BUSCO options
 lineages: metazoa_odb10
 
+# Create an expression matrix?
+run_expression_matrix: True
+
 ###
 #comand to execute it: snakemake --use-conda --snakefile compact-genome-annotation.smk --cores 8
 ##

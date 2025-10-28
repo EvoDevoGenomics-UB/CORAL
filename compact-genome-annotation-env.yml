@@ -9,7 +9,7 @@ dependencies:
     - gffutils
     - gffread
     - seqkit
-    - stringtie>=3.0
+    - stringtie==3.0.2
     - hmmer
     - busco==5.8.2
     - pandas
