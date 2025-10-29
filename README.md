@@ -10,3 +10,9 @@ Those sets are merge together to generate the final consensus annotation. From t
 Schematic pipeline:
 
 <img width="650" height="900" alt="Figure1" src="https://github.com/user-attachments/assets/1e2ed9b4-c782-410e-8d5b-5aadafac6791" />
+
+## Installation
+Source and binary packages for execute this pipeline can be directly downloaded from the Releases page on this repository.
+However, due to the presence of a submodule we recomend to download it using the following:
+
+    git clone --recursive https://github.com/EvoDevoGenomics-UB/compact-genome-annotation.git
