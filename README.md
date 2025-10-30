@@ -12,10 +12,18 @@ Schematic pipeline:
 <img width="650" height="900" alt="Figure1" src="https://github.com/user-attachments/assets/1e2ed9b4-c782-410e-8d5b-5aadafac6791" />
 
 ## Installation
+This packages is build on Snakemake, thefroe, you will need ot have Snakemake installed.
+
 Source and binary packages for execute this pipeline can be directly downloaded from the Releases page on this repository.
 However, due to the presence of a submodule we recomend to download it using the following:
 
     git clone --recursive https://github.com/EvoDevoGenomics-UB/CORAL.git
+
+## How to run
+
+To run CORAL you just need to execute it as any other snakemake file, we recomend to use conda so it will create and enviroemnt where install all the dependecies specified in the CORAL-env.yml file:
+
+    snakemake --use-conda --snakefile CORAL.smk --configfile CORAL-config.yaml --cores 4
 
 ## Output files
 
