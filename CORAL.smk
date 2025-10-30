@@ -264,22 +264,42 @@ rule run_final_annotation:
         opts = config["stringtie_merge_opts"]
     conda: env_file
     shell:"""
-    (for i in {input.gtfsclean} ; do echo $i ; done) > annotations/List_merge_opCLEAN.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}OFr1t{wildcards.threshold}.txt ; \
+    (for i in {input.gtfsclean} ; do echo $i ; done ; echo {input.excluded_file} ) > annotations/List_merge_opCLEAN.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}OFr1t{wildcards.threshold}.txt ; \
+    stringtie --version
     stringtie --merge annotations/List_merge_opCLEAN.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}OFr1t{wildcards.threshold}.txt \
      -l g -f {params.freq} {params.opts} -g {params.g_param} \
      -o {output.cleanfinal} ; \
     echo "  Final merge CLEAN done" ; \
     grep 'StringTie	transcript' {output.cleanfinal} | wc -l ; \
-    stringtie --merge {output.cleanfinal} {input.excluded_file} \
-     -G {input.opgenesgtf} \
-     -l g -f {params.freq} -F 0 -T 0 -c 0 -g {params.g_param} \
-     -o {output.noOPRNs} ; \
+
+    cat {output.cleanfinal} {input.opgenesgtf} > noOPRNs.tmp.gtf ; \
+    gffread --sort-alpha -F -T -o noOPRNs.tmp2.gtf noOPRNs.tmp.gtf ; rm noOPRNs.tmp.gtf
+    gffcompare -r {input.opgenesgtf} noOPRNs.tmp2.gtf -o noOPRNs_tmp3
+    cp noOPRNs_tmp3.annotated.gtf {output.noOPRNs}
+    rm noOPRNs*
+
+    #stringtie --merge {output.cleanfinal} \
+    # -G {input.opgenesgtf} \
+    # -l g -f {params.freq} -F 0 -T 0 -c 0 -g {params.g_param} \
+    # -o {output.noOPRNs} ; \
+    
     echo "  Final CLEAN-noOPRNs done" ; \
-    stringtie --merge {output.cleanfinal} {input.excluded_file} \
-     -G {input.mergegtf} \
-     -l g -f {params.freq} -F 0 -T 0 -c 0 -g {params.g_param} \
-     -o {output.andOPRNs} ; \
+    grep 'StringTie	transcript' {output.noOPRNs} | wc -l ; \
+
+    
+    cat {output.cleanfinal} {input.mergegtf} > andOPRNs.tmp.gtf ; \
+    gffread --sort-alpha -F -T -o andOPRNs.tmp2.gtf andOPRNs.tmp.gtf ; rm andOPRNs.tmp.gtf
+    gffcompare -r {input.mergegtf} andOPRNs.tmp2.gtf -o andOPRNs_tmp3
+    cp andOPRNs_tmp3.annotated.gtf {output.andOPRNs}
+    rm andOPRNs*
+    
+    #stringtie --merge {output.cleanfinal} \
+    # -G {input.mergegtf} \
+    # -l g -f {params.freq} -F 0 -T 0 -c 0 -g {params.g_param} \
+    # -o {output.andOPRNs} ; \
+    
     echo "  Final CLEAN-and-OPRNs done"
+    grep 'StringTie	transcript' {output.andOPRNs} | wc -l ; \
     """
 
 ##Extra things
