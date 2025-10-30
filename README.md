@@ -12,7 +12,7 @@ Schematic pipeline:
 <img width="650" height="900" alt="Figure1" src="https://github.com/user-attachments/assets/1e2ed9b4-c782-410e-8d5b-5aadafac6791" />
 
 ## Installation
-This packages is build on Snakemake, thefroe, you will need ot have Snakemake installed.
+This packages is build on _Snakemake_, therefore, you will need to have _Snakemake_ installed.
 
 Source and binary packages for execute this pipeline can be directly downloaded from the Releases page on this repository.
 However, due to the presence of a submodule we recomend to download it using the following:
@@ -21,7 +21,7 @@ However, due to the presence of a submodule we recomend to download it using the
 
 ## How to run
 
-To run CORAL you just need to execute it as any other snakemake file, we recomend to use conda so it will create and enviroemnt where install all the dependecies specified in the CORAL-env.yml file:
+To run **CORAL** you just need to modify the 'CORAL-config.yaml' with your parameters and execute it as any other _Snakemake_ file. We recomend to use _conda_ so it will create an environment where install all the dependecies specified in the 'CORAL-env.yml' file. The command will be like:
 
     snakemake --use-conda --snakefile CORAL.smk --configfile CORAL-config.yaml --cores 4
 
