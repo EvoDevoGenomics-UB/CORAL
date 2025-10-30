@@ -15,7 +15,7 @@ Schematic pipeline:
 Source and binary packages for execute this pipeline can be directly downloaded from the Releases page on this repository.
 However, due to the presence of a submodule we recomend to download it using the following:
 
-    git clone --recursive https://github.com/EvoDevoGenomics-UB/compact-genome-annotation.git
+    git clone --recursive https://github.com/EvoDevoGenomics-UB/CORAL.git
 
 ## Output files
 
