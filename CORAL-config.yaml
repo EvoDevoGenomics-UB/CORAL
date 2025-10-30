@@ -47,5 +47,5 @@ lineages: metazoa_odb10
 run_expression_matrix: True
 
 ###
-#comand to execute it: snakemake --use-conda --snakefile compact-genome-annotation.smk --cores 8
+#comand to execute it: snakemake --use-conda --snakefile CORAL.smk --cores 8
 ##
