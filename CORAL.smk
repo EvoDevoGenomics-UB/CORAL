@@ -1,17 +1,16 @@
 import os
 from os import path
 
-configfile: path.join(path.dirname(workflow.snakefile),"compact-genome-annotation-config.yaml")
+configfile: path.join(path.dirname(workflow.snakefile),"CORAL-config.yaml")
 workdir: path.join(config["workdir_top"], config["pipeline"])
 
 WORKDIR = path.join(path.dirname(workflow.snakefile),config["workdir_top"], config["pipeline"])
 SNAKEDIR = path.dirname(workflow.snakefile)
 
 in_genome = config["genome_fasta"]
-env_file = "compact-genome-annotation-env.yml"
+env_file = "CORAL-env.yml"
 REF = config["reference_annot"]
 exeOpF = "./operon-finder"
-#exeOpF = "python /data2/cristian/ntorres2/LongRead_RNAseq/compact-genome-annotation/scripts/operon_finder_v9.7.py"
 
 rule_all_input_list=["versions.txt","operon-finder",
         expand("logs/{specie}_{sample}_stats_input_reads.txt", specie=config["specie"], sample=config["samples"]),
@@ -115,15 +114,12 @@ rule run_minimap2:
         head -2 {params.name}.sam ) 2> {log}
         echo \"Minimap2 alignment done: {params.name}.sam created\"
     fi
-    #samtools view -h -q {params.qual} -o {params.name}.clean.sam -@ {threads} {params.name}.sam
-    #samtools sort -@ {threads} -O BAM -o {output.bam} {params.name}.clean.sam
 
     samtools view -h -bt {input.index} {params.name}.sam | seqkit bam -j {threads} -q {params.qual} -x -\
     | samtools sort -@ {threads} -O BAM -o {output.bam} -;
 
     echo \"{output.bam} created\"
     samtools index {output.bam}
-    #rm {params.name}.clean.sam
     """
     
 rule run_aling_stats:
