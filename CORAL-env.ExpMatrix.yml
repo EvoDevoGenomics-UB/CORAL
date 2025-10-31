@@ -1,0 +1,7 @@
+channels:
+    - conda-forge
+    - bioconda
+    - nanoporetech
+dependencies:
+    - python
+    - stringtie==3.0.2
