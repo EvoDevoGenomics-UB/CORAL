@@ -9,6 +9,7 @@ SNAKEDIR = path.dirname(workflow.snakefile)
 
 in_genome = config["genome_fasta"]
 env_file = "CORAL-env.yml"
+env_file2 = "CORAL-env.ExpMatrix.yml"
 REF = config["reference_annot"]
 exeOpF = "./operon-finder"
 
@@ -272,32 +273,27 @@ rule run_final_annotation:
     echo "  Final merge CLEAN done" ; \
     grep 'StringTie	transcript' {output.cleanfinal} | wc -l ; \
 
-    cat {output.cleanfinal} {input.opgenesgtf} > noOPRNs.tmp.gtf ; \
-    gffread --sort-alpha -F -T -o noOPRNs.tmp2.gtf noOPRNs.tmp.gtf ; rm noOPRNs.tmp.gtf
-    gffcompare -r {input.opgenesgtf} noOPRNs.tmp2.gtf -o noOPRNs_tmp3
-    cp noOPRNs_tmp3.annotated.gtf {output.noOPRNs}
-    rm noOPRNs*
-
-    #stringtie --merge {output.cleanfinal} \
-    # -G {input.opgenesgtf} \
-    # -l g -f {params.freq} -F 0 -T 0 -c 0 -g {params.g_param} \
-    # -o {output.noOPRNs} ; \
-    
+    #cat {output.cleanfinal} {input.opgenesgtf} > noOPRNs.tmp.gtf ; \
+    #gffread --sort-alpha -F -T -o noOPRNs.tmp2.gtf noOPRNs.tmp.gtf ; rm noOPRNs.tmp.gtf
+    #gffcompare -r {input.opgenesgtf} noOPRNs.tmp2.gtf -o noOPRNs_tmp3
+    #cp noOPRNs_tmp3.annotated.gtf {output.noOPRNs}
+    #rm noOPRNs
+    stringtie --merge {output.cleanfinal} \
+     -G {input.opgenesgtf} \
+     -l g -f {params.freq} -F 0 -T 0 -c 0 -g {params.g_param} \
+     -o {output.noOPRNs} ; \
     echo "  Final CLEAN-noOPRNs done" ; \
     grep 'StringTie	transcript' {output.noOPRNs} | wc -l ; \
 
-    
-    cat {output.cleanfinal} {input.mergegtf} > andOPRNs.tmp.gtf ; \
-    gffread --sort-alpha -F -T -o andOPRNs.tmp2.gtf andOPRNs.tmp.gtf ; rm andOPRNs.tmp.gtf
-    gffcompare -r {input.mergegtf} andOPRNs.tmp2.gtf -o andOPRNs_tmp3
-    cp andOPRNs_tmp3.annotated.gtf {output.andOPRNs}
-    rm andOPRNs*
-    
-    #stringtie --merge {output.cleanfinal} \
-    # -G {input.mergegtf} \
-    # -l g -f {params.freq} -F 0 -T 0 -c 0 -g {params.g_param} \
-    # -o {output.andOPRNs} ; \
-    
+    #cat {output.cleanfinal} {input.mergegtf} > andOPRNs.tmp.gtf ; \
+    #gffread --sort-alpha -F -T -o andOPRNs.tmp2.gtf andOPRNs.tmp.gtf ; rm andOPRNs.tmp.gtf
+    #gffcompare -r {input.mergegtf} andOPRNs.tmp2.gtf -o andOPRNs_tmp3
+    #cp andOPRNs_tmp3.annotated.gtf {output.andOPRNs}
+    #rm andOPRNs*    
+    stringtie --merge {output.cleanfinal} \
+     -G {input.mergegtf} \
+     -l g -f {params.freq} -F 0 -T 0 -c 0 -g {params.g_param} \
+     -o {output.andOPRNs} ; \
     echo "  Final CLEAN-and-OPRNs done"
     grep 'StringTie	transcript' {output.andOPRNs} | wc -l ; \
     """
@@ -501,7 +497,7 @@ rule run_expression_matrix:
     params:
         result_dir = directory("Expression_matrix/{specie}"),
         samples = config["samples"]
-    conda: env_file
+    conda: env_file2
     threads: config["threads"]
     shell:"""
     inputGTF=$(basename "{input.gtf}" .gtf)
