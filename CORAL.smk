@@ -225,13 +225,13 @@ rule run_operon_annotation:
         operongtf = "annotations/{specie}_LRannot_guide{ref}_v{intron}_OFr1t{threshold}_OPRNs.gtf",
         opgenesgtf = "annotations/{specie}_LRannot_guide{ref}_v{intron}_OFr1t{threshold}_OpGs.gtf",
         merge = "annotations/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_OFr1t{threshold}.sorted.gtf",
-        def_file = "annotations/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_OFr1t{threshold}.sorted_OPRNstatistics.clean.gtf",
-        opgenesgtfCLEAN = "annotations/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_OFr1t{threshold}.sorted_OPRNstatistics.OpGclean.gtf",
-        excluded_file = "annotations/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_OFr1t{threshold}.sorted_OPRNstatistics.excluded.gtf"
+        def_file = "annotations/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_OFr1t{threshold}.sorted_OPRNvalidation.clean.gtf",
+        opgenesgtfCLEAN = "annotations/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_OFr1t{threshold}.sorted_OPRNvalidation.OpGclean.gtf",
+        excluded_file = "annotations/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_OFr1t{threshold}.sorted_OPRNvalidation.excluded.gtf"
     params:
         g_param = config["stringtie_g"],
         name = "{specie}_guide{ref}_v{intron}_OFr1t{threshold}"
-    log: "logs/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_OFr1t{threshold}.sorted_OPRNstatistics.log"
+    log: "logs/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_OFr1t{threshold}.sorted_OPRNvalidation.log"
     conda: env_file
     shell:"""
     mkdir -p annotations
@@ -243,7 +243,7 @@ rule run_operon_annotation:
     cat {output.operongtf} {output.opgenesgtf} > {params.name}.tmp.gtf ; \
     gffread --sort-alpha -F -T -o {output.merge} {params.name}.tmp.gtf ; rm {params.name}.tmp.gtf
 
-    python3 {SNAKEDIR}/scripts/operon_statistics.py -f {output.merge} --log {log}
+    python3 {SNAKEDIR}/scripts/operon_validation.py -f {output.merge} --log {log}
     grep 'StringTie	transcript' {output.opgenesgtfCLEAN} | wc -l ; \
     """
 
