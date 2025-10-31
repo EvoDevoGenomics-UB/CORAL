@@ -265,7 +265,7 @@ rule run_final_annotation:
         opts = config["stringtie_merge_opts"]
     conda: env_file
     shell:"""
-    (for i in {input.gtfsclean} ; do echo $i ; done ; echo {input.excluded_file} ) > annotations/List_merge_opCLEAN.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt ; \
+    (for i in {input.gtfsclean} ; do echo $i ; done ) > annotations/List_merge_opCLEAN.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt ; \
     stringtie --version
     stringtie --merge annotations/List_merge_opCLEAN.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt \
      -l g -f {params.freq} {params.opts} -g {params.g_param} \
@@ -278,7 +278,7 @@ rule run_final_annotation:
     #gffcompare -r {input.opgenesgtf} noOPRNs.tmp2.gtf -o noOPRNs_tmp3
     #cp noOPRNs_tmp3.annotated.gtf {output.noOPRNs}
     #rm noOPRNs
-    stringtie --merge {output.cleanfinal} \
+    stringtie --merge {output.cleanfinal} {input.excluded_file} \
      -G {input.opgenesgtf} \
      -l g -f {params.freq} -F 0 -T 0 -c 0 -g {params.g_param} \
      -o {output.noOPRNs} ; \
@@ -290,7 +290,7 @@ rule run_final_annotation:
     #gffcompare -r {input.mergegtf} andOPRNs.tmp2.gtf -o andOPRNs_tmp3
     #cp andOPRNs_tmp3.annotated.gtf {output.andOPRNs}
     #rm andOPRNs*    
-    stringtie --merge {output.cleanfinal} \
+    stringtie --merge {output.cleanfinal} {input.excluded_file} \
      -G {input.mergegtf} \
      -l g -f {params.freq} -F 0 -T 0 -c 0 -g {params.g_param} \
      -o {output.andOPRNs} ; \
