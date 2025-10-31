@@ -9,7 +9,7 @@ Those sets are merge together to generate the final consensus annotation. From t
 
 Schematic pipeline:
 
-[Figure1_new.tif](https://github.com/user-attachments/files/23264836/Figure1_new.tif)
+<img width="650" height="900" alt="Figure1" src="https://github.com/user-attachments/files/23264836/Figure1_new.tif" />
 
 ## Installation
 This packages is build on _Snakemake_, therefore, you will need to have _Snakemake_ installed.
