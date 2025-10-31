@@ -18,7 +18,7 @@ rule_all_input_list=["versions.txt","operon-finder",
         expand("alignments/{specie}_{sample}_reads_aln_v{intron}.sorted.bam", specie=config["specie"], sample=config["samples"], intron=config["minimap2_max_intron"]),
         expand("alignments/{specie}_{sample}_reads_aln_sorted_v{intron}.stats.txt", specie=config["specie"], sample=config["samples"], intron=config["minimap2_max_intron"]),
         expand("sample_annotations/{specie}_{sample}_guide{ref}_v{intron}.gtf", specie=config["specie"], sample=config["samples"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"]),
-        expand("operon_finder_results/{specie}_guide{ref}_{sample}_v{intron}_opCLEAN_t{threshold}.clean.gtf", specie=config["specie"], sample=config["samples"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+        expand("GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_opCLEAN_t{threshold}.clean.gtf", specie=config["specie"], sample=config["samples"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("annotations/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.sorted.gtf", specie=config["specie"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("annotations/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-and-OPRNs.gtf", specie=config["specie"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("annotations/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs_longest_trans_only.gtf", specie=config["specie"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
@@ -29,7 +29,7 @@ rule_all_input_list=["versions.txt","operon-finder",
         expand("busco_analysis/BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_andOPRNs", specie=config["specie"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("busco_analysis/BUSCO_results_all_summaries_{specie}_guide{ref}_v{intron}_gambat{threshold}", specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("busco_analysis/BUSCO_trans_{specie}_LRannot_REF", specie=config["specie"]),
-        expand("logs/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_operon_finder_run_FINAL.log", specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]) ]
+        expand("logs/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_GAMBA_run_FINAL.log", specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]) ]
 
 if config["run_gffcomapre"] == True :
     rule_all_input_list.append(expand("Gffcompare_results/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}",specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]))        
@@ -46,7 +46,7 @@ rule dump_versions:
     conda: env_file
     shell: "command -v conda > /dev/null && conda list > {output.ver}"
 
-rule build_operon_finder:
+rule build_GAMBA:
     output: "operon-finder"
     conda: env_file
     shell: """
@@ -167,30 +167,30 @@ rule run_stringtie_sample_annotations:
 ##Find and annotate operons and contained genes
 rule do_operon_annotations:
     input:
-        expand("operon_finder_results/{specie}_guide{ref}_{sample}_v{intron}_operons_found_t{threshold}.tsv", specie=config["specie"], sample=config["samples"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        expand("operon_finder_results/{specie}_guide{ref}_{sample}_v{intron}_Operons_t{threshold}.clean.gtf", specie=config["specie"], sample=config["samples"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        expand("operon_finder_results/{specie}_guide{ref}_{sample}_v{intron}_OperonGenes_t{threshold}.clean.gtf", specie=config["specie"], sample=config["samples"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        expand("operon_finder_results/{specie}_guide{ref}_{sample}_v{intron}_opCLEAN_t{threshold}.clean.gtf", specie=config["specie"], sample=config["samples"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+        expand("GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_operons_found_t{threshold}.tsv", specie=config["specie"], sample=config["samples"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+        expand("GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_Operons_t{threshold}.clean.gtf", specie=config["specie"], sample=config["samples"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+        expand("GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_OperonGenes_t{threshold}.clean.gtf", specie=config["specie"], sample=config["samples"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+        expand("GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_opCLEAN_t{threshold}.clean.gtf", specie=config["specie"], sample=config["samples"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("annotations/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.sorted.gtf", specie=config["specie"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"])
 
-#Python script operon_finder
-rule run_operon_finder_and_sanatizing:
+#Python script GAMBA
+rule run_GAMBA_and_sanatizing:
     input:
-        operon_finder = rules.build_operon_finder.output,
+        GAMBA = rules.build_GAMBA.output,
         gtf = rules.run_stringtie_sample_annotations.output.gtf
     output:
-        file = "operon_finder_results/{specie}_guide{ref}_{sample}_v{intron}_operons_found_t{threshold}.tsv",
-        gtfOPRNs = "operon_finder_results/{specie}_guide{ref}_{sample}_v{intron}_Operons_t{threshold}.clean.gtf",
-        gtfOpGs = "operon_finder_results/{specie}_guide{ref}_{sample}_v{intron}_OperonGenes_t{threshold}.clean.gtf",
-        gtfCLEAN = "operon_finder_results/{specie}_guide{ref}_{sample}_v{intron}_opCLEAN_t{threshold}.clean.gtf"
+        file = "GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_operons_found_t{threshold}.tsv",
+        gtfOPRNs = "GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_Operons_t{threshold}.clean.gtf",
+        gtfOpGs = "GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_OperonGenes_t{threshold}.clean.gtf",
+        gtfCLEAN = "GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_opCLEAN_t{threshold}.clean.gtf"
     params:
-        name = "operon_finder_results/{specie}_guide{ref}_{sample}_v{intron}",
+        name = "GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}",
         threshold = config["operon_threshold"]
     conda: env_file
-    log: "logs/{specie}_guide{ref}_{sample}_v{intron}_gambat{threshold}_operon_finder_run.log"
+    log: "logs/{specie}_guide{ref}_{sample}_v{intron}_gambat{threshold}_GAMBA_run.log"
     threads: config["threads"]
     shell:"""
-    mkdir -p operon_finder_results
+    mkdir -p GAMBA_results
     {exeOpF} -f {input.gtf} --threshold {params.threshold} -o {params.name} --log {log}
     
     awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
@@ -212,9 +212,9 @@ gtfsoperons_samples=[]
 gtfsopgenes_samples=[]
 gtfsclean_samples=[]
 for SAMPLE in config["samples"]:
-    gtfsoperons_samples.append("operon_finder_results/{{specie}}_guide{{ref}}_{}_v{{intron}}_Operons_t{{threshold}}.clean.gtf".format(SAMPLE))
-    gtfsopgenes_samples.append("operon_finder_results/{{specie}}_guide{{ref}}_{}_v{{intron}}_OperonGenes_t{{threshold}}.clean.gtf".format(SAMPLE))
-    gtfsclean_samples.append("operon_finder_results/{{specie}}_guide{{ref}}_{}_v{{intron}}_opCLEAN_t{{threshold}}.clean.gtf".format(SAMPLE))
+    gtfsoperons_samples.append("GAMBA_results/{{specie}}_guide{{ref}}_{}_v{{intron}}_Operons_t{{threshold}}.clean.gtf".format(SAMPLE))
+    gtfsopgenes_samples.append("GAMBA_results/{{specie}}_guide{{ref}}_{}_v{{intron}}_OperonGenes_t{{threshold}}.clean.gtf".format(SAMPLE))
+    gtfsclean_samples.append("GAMBA_results/{{specie}}_guide{{ref}}_{}_v{{intron}}_opCLEAN_t{{threshold}}.clean.gtf".format(SAMPLE))
 
 #Create oepron and operon-contained genes annotations
 rule run_operon_annotation:
@@ -433,11 +433,11 @@ rule run_final_operon_search:
     input:
         gtf = rules.run_recover_coverage.output.gtfFinal
     output:
-        dir_name = directory("operon_finder_results/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_DEF")
+        dir_name = directory("GAMBA_results/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_DEF")
     params:
         name = "{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-and-OPRNs.counts",
         threshold = config["operon_threshold"]
-    log: "logs/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_operon_finder_run_FINAL.log"
+    log: "logs/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_GAMBA_run_FINAL.log"
     conda: env_file
     shell:"""
     mkdir -p {output.dir_name}
