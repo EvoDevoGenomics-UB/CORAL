@@ -47,13 +47,13 @@ rule dump_versions:
     shell: "command -v conda > /dev/null && conda list > {output.ver}"
 
 rule build_GAMBA:
-    output: "operon-finder"
+    output: "gamba-tool"
     conda: env_file
     shell: """
-    cd {SNAKEDIR}/scripts/operon-finder-rust
+    cd {SNAKEDIR}/scripts/gamba-tool
     cargo build --release
     cd {WORKDIR}
-    cp -r {SNAKEDIR}/scripts/operon-finder-rust/target/release/{output} {WORKDIR}
+    cp -r {SNAKEDIR}/scripts/gamba-tool/target/release/{output} {WORKDIR}
     {WORKDIR}/{output} --help
     """
 
