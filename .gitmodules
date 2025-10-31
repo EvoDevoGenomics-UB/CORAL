@@ -1,0 +1,3 @@
+[submodule "scripts/gamba-tool"]
+	path = scripts/gamba-tool
+	url = https://github.com/nurie05/gamba-tool.git
