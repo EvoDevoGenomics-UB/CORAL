@@ -1,3 +1,0 @@
-[submodule "scripts/operon-finder-rust"]
-	path = scripts/operon-finder-rust
-	url = https://github.com/nurie05/operon-finder-rust.git
