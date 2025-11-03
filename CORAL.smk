@@ -9,7 +9,7 @@ SNAKEDIR = path.dirname(workflow.snakefile)
 
 in_genome = config["genome_fasta"]
 env_file = "CORAL-env.yml"
-env_file2 = "CORAL-env.ExpMatrix.yml"
+env_file2 = "CORAL-env.merge.yml"
 REF = config["reference_annot"]
 exeOpF = "./gamba-tool"
 
@@ -496,8 +496,9 @@ rule run_expression_matrix:
         out_file_t = "Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-and-OPRNs/transcript_count_matrix.csv"
     params:
         result_dir = directory("Expression_matrix/{specie}"),
-        samples = config["samples"]
-    conda: env_file2
+        samples = config["samples"],
+        length = config["length"]
+    conda: env_file
     threads: config["threads"]
     shell:"""
     inputGTF=$(basename "{input.gtf}" .gtf)
@@ -532,6 +533,6 @@ rule run_expression_matrix:
 
     # Create final matrix with all counts
     echo "Create final matrix with all counts"
-    python {SNAKEDIR}/scripts/prepDE.py3 -i {params.result_dir}/${{inputGTF}}/ALL_sample_list.txt -g {output.out_file_g} -t {output.out_file_t}
+    python {SNAKEDIR}/scripts/prepDE.py3 -l {length} -i {params.result_dir}/${{inputGTF}}/ALL_sample_list.txt -g {output.out_file_g} -t {output.out_file_t}
 
     """
