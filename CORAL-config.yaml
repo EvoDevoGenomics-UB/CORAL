@@ -45,6 +45,8 @@ lineages: metazoa_odb10
 
 # Create an expression matrix?
 run_expression_matrix: True
+# Mean length of long-reads (to use for expression matrix)
+length: True
 
 ###
 #comand to execute it: snakemake --use-conda --snakefile CORAL.smk --cores 8
