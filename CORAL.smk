@@ -263,7 +263,7 @@ rule run_final_annotation:
         freq = config["stringtie_freq"],
         g_param = config["stringtie_g"],
         opts = config["stringtie_merge_opts"]
-    conda: env_file
+    conda: env_file2
     shell:"""
     (for i in {input.gtfsclean} ; do echo $i ; done ) > annotations/List_merge_opCLEAN.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt ; \
     stringtie --version
