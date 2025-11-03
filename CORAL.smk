@@ -28,8 +28,7 @@ rule_all_input_list=["versions.txt","operon-finder",
         expand("busco_analysis/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-and-OPRNs.fasta", specie=config["specie"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("busco_analysis/BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_andOPRNs", specie=config["specie"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("busco_analysis/BUSCO_results_all_summaries_{specie}_guide{ref}_v{intron}_gambat{threshold}", specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        expand("busco_analysis/BUSCO_trans_{specie}_LRannot_REF", specie=config["specie"]),
-        expand("logs/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_GAMBA_run_FINAL.log", specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]) ]
+        expand("busco_analysis/BUSCO_trans_{specie}_LRannot_REF", specie=config["specie"])
 
 if config["run_gffcomapre"] == True :
     rule_all_input_list.append(expand("Gffcompare_results/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}",specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]))        
@@ -427,21 +426,6 @@ rule run_recover_coverage:
     shell: """
     stringtie -G {input.gtf2} -e -o {output.gtfFinal2} {input.bams}
     stringtie -G {input.gtf} -e -o {output.gtfFinal} {input.bams}
-    """
-
-rule run_final_operon_search:
-    input:
-        gtf = rules.run_recover_coverage.output.gtfFinal
-    output:
-        dir_name = directory("GAMBA_results/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_DEF")
-    params:
-        name = "{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-and-OPRNs.counts",
-        threshold = config["operon_threshold"]
-    log: "logs/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_GAMBA_run_FINAL.log"
-    conda: env_file
-    shell:"""
-    mkdir -p {output.dir_name}
-    {exeOpF} -f {input.gtf} --threshold {params.threshold} -o {output.dir_name}/{params.name} --log {log}
     """
 
 ##Comparing new annoatation againts reference one
