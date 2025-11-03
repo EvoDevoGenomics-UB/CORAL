@@ -31,6 +31,7 @@ minimap2_max_intron: "10k"
 minimum_mapping_quality: 40
 
 # Options passed to stringtie sample annotation:
+stringtie_strand: "--fr"
 stringtie_opts: "-M 0.75 -j 2 -a 15 "
 stringtie_guide_opts: ["REF","none"]
 #Operon finder options:
