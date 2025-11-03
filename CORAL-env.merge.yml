@@ -4,4 +4,4 @@ channels:
     - nanoporetech
 dependencies:
     - python
-    - stringtie==3.0.2
+    - stringtie==3.0.1
