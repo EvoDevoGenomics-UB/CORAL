@@ -145,7 +145,8 @@ rule run_stringtie_sample_annotations:
     output:
         gtf = "sample_annotations/{specie}_{sample}_guide{ref}_v{intron}.gtf"
     params:
-        opts = config["stringtie_opts"]
+        opts = config["stringtie_opts"],
+        strand = config["stringtie_strand"]
     conda: env_file
     threads: config["threads"]
     shell:"""
@@ -154,11 +155,11 @@ rule run_stringtie_sample_annotations:
         stringtie --version
         if [ $input_guide == "REF" ] ; then
             echo \"Comand: stringtie --fr -L -R -p {threads} {params.opts} -G {REF} -o {output.gtf} {input.bam}\"
-            stringtie --fr -L -R -p {threads} {params.opts} -G {REF} -o {output.gtf} {input.bam}
+            stringtie {params.strand} -L -R -p {threads} {params.opts} -G {REF} -o {output.gtf} {input.bam}
             echo \"Stringtie {wildcards.ref} guided gtf created: {output.gtf}\"
         else
             echo \"Comand: stringtie --fr -L -R -p {threads} {params.opts} -o {output.gtf} {input.bam}\"
-            stringtie --fr -L -R -p {threads} {params.opts} -o {output.gtf} {input.bam} ; \
+            stringtie {params.strand} -L -R -p {threads} {params.opts} -o {output.gtf} {input.bam} ; \
             echo \"Stringtie no-guide no-assembly gtf created: {output.gtf}\"
         fi
         """
