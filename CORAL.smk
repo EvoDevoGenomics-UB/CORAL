@@ -172,7 +172,7 @@ rule do_operon_annotations:
         expand("GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_opCLEAN_t{threshold}.clean.gtf", specie=config["specie"], sample=config["samples"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("annotations/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.sorted.gtf", specie=config["specie"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"])
 
-#Python script GAMBA
+#Rust script GAMBA
 rule run_GAMBA_and_sanatizing:
     input:
         GAMBA = rules.build_GAMBA.output,
@@ -246,55 +246,59 @@ rule run_operon_annotation:
     grep 'StringTie	transcript' {output.opgenesgtfCLEAN} | wc -l ; \
     """
 
-#Create final concensus annotations
-rule run_final_annotation:
+#Create gene final concensus annotations
+rule run_gCLEAN_annotation:
     input:
-        gtfsclean = gtfsclean_samples ,
-        #mergegtf = "annotations/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.sorted.gtf",
-        mergegtf = rules.run_operon_annotation.output.def_file,
-        excluded_file = rules.run_operon_annotation.output.excluded_file,
-        opgenesgtf = rules.run_operon_annotation.output.opgenesgtfCLEAN
+        gtfsclean = gtfsclean_samples
     output:
-        cleanfinal = "annotations/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_mergeCLEAN.gtf" ,
-        noOPRNs = "annotations/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.gtf" ,
-        andOPRNs = "annotations/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-and-OPRNs.gtf"
+        cleanfinal = "annotations/{specie}_LRannot_guide{ref}_v{intron}_OFr1t{threshold}_mergeCLEAN.gtf"
     params:
         freq = config["stringtie_freq"],
         g_param = config["stringtie_g"],
         opts = config["stringtie_merge_opts"]
-    conda: env_file2
+    conda: env_file
     shell:"""
-    (for i in {input.gtfsclean} ; do echo $i ; done ) > annotations/List_merge_opCLEAN.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt ; \
+    (for i in {input.gtfsclean} ; do echo $i ; done ) > annotations/List_merge_opCLEAN.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}OFr1t{wildcards.threshold}.txt ; \
     stringtie --version
-    stringtie --merge annotations/List_merge_opCLEAN.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt \
+
+    stringtie --merge annotations/List_merge_opCLEAN.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}OFr1t{wildcards.threshold}.txt \
      -l g -f {params.freq} {params.opts} -g {params.g_param} \
      -o {output.cleanfinal} ; \
     echo "  Final merge CLEAN done" ; \
-    grep 'StringTie	transcript' {output.cleanfinal} | wc -l ; \
+    grep 'StringTie	transcript' {output.cleanfinal} | wc -l ;
 
-    #cat {output.cleanfinal} {input.opgenesgtf} > noOPRNs.tmp.gtf ; \
-    #gffread --sort-alpha -F -T -o noOPRNs.tmp2.gtf noOPRNs.tmp.gtf ; rm noOPRNs.tmp.gtf
-    #gffcompare -r {input.opgenesgtf} noOPRNs.tmp2.gtf -o noOPRNs_tmp3
-    #cp noOPRNs_tmp3.annotated.gtf {output.noOPRNs}
-    #rm noOPRNs
-    stringtie --merge {output.cleanfinal} {input.excluded_file} \
+    """
+
+#Create Merge final concensus annotations
+rule run_final_annotation:
+    input:
+        cleanfinal = rules.run_gCLEAN_annotation.output.cleanfinal ,
+        mergegtf = rules.run_operon_annotation.output.def_file,
+        excluded_file = rules.run_operon_annotation.output.excluded_file,
+        opgenesgtf = rules.run_operon_annotation.output.opgenesgtfCLEAN
+    output:
+        noOPRNs = "annotations/{specie}_LRannot_guide{ref}_v{intron}_OFr1t{threshold}_StringtieMerge.clean-noOPRNs.gtf" ,
+        andOPRNs = "annotations/{specie}_LRannot_guide{ref}_v{intron}_OFr1t{threshold}_StringtieMerge.clean-and-OPRNs.gtf"
+    params:
+        freq = config["stringtie_freq"],
+        g_param = config["stringtie_g"]
+    conda: env_file2
+    shell:"""
+    
+    stringtie --merge {input.cleanfinal} {input.excluded_file} \
      -G {input.opgenesgtf} \
      -l g -f {params.freq} -F 0 -T 0 -c 0 -g {params.g_param} \
      -o {output.noOPRNs} ; \
     echo "  Final CLEAN-noOPRNs done" ; \
     grep 'StringTie	transcript' {output.noOPRNs} | wc -l ; \
-
-    #cat {output.cleanfinal} {input.mergegtf} > andOPRNs.tmp.gtf ; \
-    #gffread --sort-alpha -F -T -o andOPRNs.tmp2.gtf andOPRNs.tmp.gtf ; rm andOPRNs.tmp.gtf
-    #gffcompare -r {input.mergegtf} andOPRNs.tmp2.gtf -o andOPRNs_tmp3
-    #cp andOPRNs_tmp3.annotated.gtf {output.andOPRNs}
-    #rm andOPRNs*    
-    stringtie --merge {output.cleanfinal} {input.excluded_file} \
+    
+    stringtie --merge {input.cleanfinal} {input.excluded_file} \
      -G {input.mergegtf} \
      -l g -f {params.freq} -F 0 -T 0 -c 0 -g {params.g_param} \
      -o {output.andOPRNs} ; \
     echo "  Final CLEAN-and-OPRNs done"
-    grep 'StringTie	transcript' {output.andOPRNs} | wc -l ; \
+    grep 'StringTie	transcript' {output.andOPRNs} | wc -l 
+
     """
 
 ##Extra things
