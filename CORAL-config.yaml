@@ -2,27 +2,27 @@
 ## General pipeline parameters:
 # Threads:
 threads: 16
-# Name of the Results folder inside the working directory (IMPORTAT to include last "/"):
-pipeline: "OdiBAR_annotation_DEF/"
 # ABSOLUTE path to working directory (IMPORTAT to include last "/"):
-workdir_top: "/data2/cristian/ntorres2/LongRead_RNAseq/Workspaces/"
+workdir_top: "/$USER/home/CORAL_Workspaces/"
+# Name of the Results folder inside the working directory (IMPORTAT to include last "/"):
+pipeline: "CORAL_results/"
 
 ## Pipeline-specific parameters:
 # Absolute directory to the cDNA reads in fastq(.fq) format
-data_dir: "/data2/cristian/ntorres2/LongRead_RNAseq/Workspaces/BAR_longreads_C05C06/processed_reads/FAX17881_1_"
+data_dir: "/$USER/home/data/"
+#Nameing of the .fq/.fastq files (it adds '_' as separator: {samples}_{data-sufix})
+samples: ["BP01","BP02","BP03","BP04","BP05","BP06","BP07","BP08","BP09","BP10new","BP11","BP12"]
 data_sufix: "_full_length_reads.clean.fq"
 
-#Nameing of the .fq files (it uses the '_' as separator: treatments_stages_replicates.fq)
-specie: ["OdiBAR"]
-samples: ["BP01","BP02","BP03","BP04","BP05","BP06","BP07","BP08","BP09","BP10new","BP11","BP12"]
-
+# Specie name, it will be use for naming output files
+specie: ["CORAL"]
 # Input genome
-genome_fasta: "/data2/cristian/ntorres2/LongRead_RNAseq/Snakemake_Tutorial/REF_genomes/Bar2_p4.Flye.masked.fa"
-# Gffcomapre run?
-run_gffcomapre: True
-# Input reference annotation
-reference_annot: "/data2/cristian/ntorres2/LongRead_RNAseq/Snakemake_Tutorial/REF_genomes/Bar2_p4_v4.3.gtf"
-# Extra option passed to minimap2 when generating index
+genome_fasta: "/$USER/home/data/reference_genome.fa"
+# Run a Gffcomapre with the reference?
+run_gffcomapre: False
+# Absolute path to reference annotation (optional)
+reference_annot: []
+# Minimap2 options when generating index
 minimap_index_opts: "-k14"
 
 # Extra options passed to minimap2 when aligning the reads
@@ -30,13 +30,18 @@ minimap2_opts: "-ax splice"
 minimap2_max_intron: "10k"
 minimum_mapping_quality: 40
 
-# Options passed to stringtie sample annotation:
+# Options passed to StringTie when performing sample annotations:
 stringtie_strand: "--fr"
 stringtie_opts: "-M 0.75 -j 2 -a 15 "
-stringtie_guide_opts: ["REF","none"]
-#Operon finder options:
+stringtie_guide_opts: ["none"]
+  #You can use stringtie_guide_opts: ["REF","none"] to produce two annotations,
+  #"REF" using the reference annotation as guide annotation, and
+  #"none" for creating an annotation without any guide annotation.
+  
+#GAMBA-tool options:
 operon_threshold: 1.00
-# Options passed to stringtie merge annotation:
+
+# Options passed to StringTie for merge annotations:
 stringtie_freq: 0.2
 stringtie_g: '-60'
 stringtie_merge_opts: "-F 0.5 -T 0 -c 2"
@@ -47,7 +52,7 @@ lineages: metazoa_odb10
 # Create an expression matrix?
 run_expression_matrix: True
 # Mean length of long-reads (to use for expression matrix)
-length: True
+length: "860"
 
 ###
 #comand to execute it: snakemake --use-conda --snakefile CORAL.smk --cores 8
