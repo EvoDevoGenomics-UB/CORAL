@@ -1,3 +1,4 @@
+---
 ## General pipeline parameters:
 # Threads:
 threads: 16
@@ -5,9 +6,9 @@ threads: 16
 workdir_top: "/$USER/home/CORAL_Workspaces/"
 # Name of the Results folder inside the working directory (IMPORTAT to include last "/"):
 pipeline: "CORAL_results/"
-  #Here the '.snakemake' folder containing the conda environments will be created
-  #together with all teh result files and folders. 
----
+#Here the '.snakemake' folder containing the conda environments will be created
+#together with all teh result files and folders. 
+
 ## Pipeline-specific parameters:
 # Absolute directory to the cDNA reads in fastq(.fq) format
 data_dir: "/$USER/home/data/"
@@ -35,9 +36,9 @@ minimum_mapping_quality: 40
 stringtie_strand: "--fr"
 stringtie_opts: "-M 0.75 -j 2 -a 15 "
 stringtie_guide_opts: ["none"]
-  #You can use stringtie_guide_opts: ["REF","none"] to produce two annotations,
-  #"REF" using the reference annotation as guide annotation, and
-  #"none" for creating an annotation without any guide annotation.
+#You can use stringtie_guide_opts: ["REF","none"] to produce two annotations,
+#"REF" using the reference annotation as guide annotation, and
+#"none" for creating an annotation without any guide annotation.
   
 # GAMBA-tool options:
 operon_threshold: 1.00
@@ -53,6 +54,7 @@ lineages: metazoa_odb10
 # Create an expression matrix?
 run_expression_matrix: True
 # Mean length of long-reads (to use for expression matrix)
-length: "860"
----
+length: 860
+
+###
 #comand to execute it: snakemake --use-conda --snakefile CORAL.smk --cores 8
