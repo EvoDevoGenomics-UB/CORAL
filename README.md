@@ -1,5 +1,7 @@
 # CORAL: Compact-genome Oriented RNA-based Annotation using Long reads
 
+[![Snakemake](https://img.shields.io/badge/snakemake-≥5.24.1-brightgreen.svg?style=flat)](https://snakemake.readthedocs.io)
+
 The CORAL protocol is a set of scripts to <b>annotate compact genomes</b> using <b>long-read RNAseq data</b>.
 
 It uses as **input** clean (primer-trimmed) pre-processed fastq files and maps them to the given genome using <i>Minimap2</i>.
