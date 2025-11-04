@@ -6,10 +6,10 @@ workdir: path.join(config["workdir_top"], config["pipeline"])
 
 WORKDIR = path.join(path.dirname(workflow.snakefile),config["workdir_top"], config["pipeline"])
 SNAKEDIR = path.dirname(workflow.snakefile)
+env_file = path.join(path.dirname(workflow.snakefile),"envs/CORAL-env.yml")
+env_file2 = path.join(path.dirname(workflow.snakefile),"envs/CORAL-env.merge.yml")
 
 in_genome = config["genome_fasta"]
-env_file = "CORAL-env.yml"
-env_file2 = "CORAL-env.merge.yml"
 REF = config["reference_annot"]
 exeOpF = "./gamba-tool"
 
