@@ -2,10 +2,10 @@
 
 [![Snakemake](https://img.shields.io/badge/snakemake-≥5.24.1-brightgreen.svg?style=flat)](https://snakemake.readthedocs.io)
 
-The CORAL protocol is a snakemake pipeline design to <b>annotate compact genomes</b> using <b>long-read RNAseq data</b>.
+The CORAL protocol is a snakemake workflow design to <b>annotate compact genomes</b> using <b>long-read RNAseq data</b>.
 
 It uses as **input** clean (primer-trimmed) pre-processed fastq files and maps them to the given genome using <i>Minimap2</i>.
-Then creates non-assembled annotations for each fastq given using <i>StringTie (v3.0.2)</i> and looks for potential operons within those annotations (implementing <i>GAMBA v1.3.2</i>). After identifing operon transcripts, operon-conteined transcripts, and non-operon-related transcripts, it generates consensus annotations for the three sets of transcirpts. Then, these sets are merged (using <i>StringTie (v3.0.1)</i>) to generate two final consensus annotations: 'Merge clean_andOPRNs GTF', that contains all three sets, and 'Merge clean_noOPRNs GTF', that only includes operon-contained transcripts and non-operon-related transcripts. The quality of the annotation is assayed with <i>BUSCO (v5.8)</i>, and also with _Gffcomapre_ when a reference annotation is provided. Finally, CORAL generates an expression matrix of the consensus annotation with all the transcripts (Merge clean_andOPRNs GTF) when specified in the configuration file.
+Then creates non-assembled annotations for each fastq given using <i>StringTie v3.0.2</i> and looks for potential operons within those annotations (implementing <i>GAMBA v1.3.2</i>). After identifing operon transcripts, operon-conteined transcripts, and non-operon-related transcripts, it generates consensus annotations for the three sets of transcirpts. Then, these sets are merged (using <i>StringTie v3.0.1</i>) to generate two final consensus annotations: 'Merge clean_andOPRNs GTF', that contains all three sets, and 'Merge clean_noOPRNs GTF', that only includes operon-contained transcripts and non-operon-related transcripts. The quality of the annotation is assayed with <i>BUSCO v5.8</i>, and also with _Gffcomapre_ when a reference annotation is provided. Finally, CORAL generates an expression matrix of the consensus annotation with all the transcripts (Merge clean_andOPRNs GTF) when specified in the configuration file.
 
 Schematic pipeline:
 
@@ -21,7 +21,7 @@ However, due to the presence of a submodule we recomend to download it using the
 
 ## How to run
 
-To run **CORAL** you just need to modify the 'CORAL-config.yaml' with your parameters and execute it as any other _Snakemake_ file. We recomend to use _conda_ so it will create an environment where install all the dependecies specified in the 'CORAL-env.yml' and 'CORAL-env.merg.yml' files. The command will be like:
+To run **CORAL** you just need to modify the 'CORAL-config.yaml' with your parameters and execute it as any other _Snakemake_ file. We recomend to use _conda_ so it will create an environment where install all the dependecies specified in the 'CORAL-env.yml' and 'CORAL-env.merge.yml' files. The command will be like:
 
     snakemake --use-conda --snakefile CORAL.smk --configfile CORAL-config.yaml --cores 4
 
