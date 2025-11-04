@@ -34,10 +34,10 @@ To run **CORAL** you just need to modify the 'CORAL-config.yaml' with your param
 The CORAL pipeline creates several folders including:
 * **alignments**: contains all the reads alignments for each sample individually.
 * **index**: contains the minimap2 index of the genome.
-* **logs**: contais several log files of diffrent processes (i.e.: minimap2, input_files_stats, etc.).
-* **sample_annotations**: contains the GTF created for each samples,
+* **logs**: contains several log files of different processes (i.e.: minimap2, input_files_stats, etc.).
+* **sample_annotations**: contains the GTF annotation files created for each sample.
 * **annotations**: contains the consensus annotations (merged annotations).
-* **GAMBA_results**: contians the output of the GAMBA tool for each samples (i.e. the operons found on each sample).
-* **busco_downloads**: contians the BUSCO database used for the BUSCO analysis
+* **GAMBA_results**: contians the output of the GAMBA tool for each sample (i.e. the operons found on each sample).
+* **busco_downloads**: contians the BUSCO database used for the BUSCO analysis.
 * **busco_analysis**: contains the BUSCO results for the main consensus annotaitons.
-* **Expression_matix**: contains the ouputs generated for creat the expression matrix of the 'andOPRNs' consensus annotation.
+* **Expression_matix**: contains the outputs generated for create the expression matrix of the 'andOPRNs' consensus annotation.
