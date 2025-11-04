@@ -1,7 +1,7 @@
 import os
 from os import path
 from snakemake.utils import min_version
-min_version("5.24.1")
+min_version("5.24")
 
 configfile: path.join(path.dirname(workflow.snakefile),"CORAL-config.yaml")
 workdir: path.join(config["workdir_top"], config["pipeline"])
@@ -96,15 +96,15 @@ rule build_minimap_index:
 rule run_minimap2:
     input:
         index = "index/{specie}_genome_index.mmi",
-        fastq = config["data_dir"] + "{sample}" + config["data_sufix"],
-        genome_fai = in_genome + ".fai"
+        fastq = config["data_dir"] + "{sample}" + config["data_sufix"]
     output:
         bam = "alignments/{specie}_{sample}_reads_aln_v{intron}.sorted.bam"
     params:
         name = "alignments/{specie}_{sample}_reads_aln_v{intron}",
         opts = config["minimap2_opts"],
         max_intron = config["minimap2_max_intron"],
-        qual = config["minimum_mapping_quality"]
+        qual = config["minimum_mapping_quality"],
+        genome_fai = in_genome + ".fai"
     threads: config["threads"]
     conda: env_file
     log: "logs/{specie}_{sample}_v{intron}_minimap2_run.log"
@@ -254,17 +254,17 @@ rule run_gCLEAN_annotation:
     input:
         gtfsclean = gtfsclean_samples
     output:
-        cleanfinal = "annotations/{specie}_LRannot_guide{ref}_v{intron}_OFr1t{threshold}_mergeCLEAN.gtf"
+        cleanfinal = "annotations/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_mergeCLEAN.gtf"
     params:
         freq = config["stringtie_freq"],
         g_param = config["stringtie_g"],
         opts = config["stringtie_merge_opts"]
     conda: env_file
     shell:"""
-    (for i in {input.gtfsclean} ; do echo $i ; done ) > annotations/List_merge_opCLEAN.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}OFr1t{wildcards.threshold}.txt ; \
+    (for i in {input.gtfsclean} ; do echo $i ; done ) > annotations/List_merge_opCLEAN.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt ; \
     stringtie --version
 
-    stringtie --merge annotations/List_merge_opCLEAN.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}OFr1t{wildcards.threshold}.txt \
+    stringtie --merge annotations/List_merge_opCLEAN.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt \
      -l g -f {params.freq} {params.opts} -g {params.g_param} \
      -o {output.cleanfinal} ; \
     echo "  Final merge CLEAN done" ; \
@@ -280,8 +280,8 @@ rule run_final_annotation:
         excluded_file = rules.run_operon_annotation.output.excluded_file,
         opgenesgtf = rules.run_operon_annotation.output.opgenesgtfCLEAN
     output:
-        noOPRNs = "annotations/{specie}_LRannot_guide{ref}_v{intron}_OFr1t{threshold}_StringtieMerge.clean-noOPRNs.gtf" ,
-        andOPRNs = "annotations/{specie}_LRannot_guide{ref}_v{intron}_OFr1t{threshold}_StringtieMerge.clean-and-OPRNs.gtf"
+        noOPRNs = "annotations/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.gtf" ,
+        andOPRNs = "annotations/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-and-OPRNs.gtf"
     params:
         freq = config["stringtie_freq"],
         g_param = config["stringtie_g"]
