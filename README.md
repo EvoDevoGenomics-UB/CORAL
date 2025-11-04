@@ -12,7 +12,7 @@ Schematic pipeline:
 <img width="695" height="1551" alt="Figure1_new" src="https://github.com/user-attachments/assets/1fe688f6-d507-4a5a-a065-45dd8b265965" />
 
 ## Installation
-This packages is build on _Snakemake_, therefore, you will need to have _Snakemake_ installed.
+This pipeline is build on _Snakemake_, therefore, you will need to have _Snakemake_ installed.
 
 Source and binary packages for execute this pipeline can be directly downloaded from the Releases page on this repository.
 However, due to the presence of a submodule we recomend to download it using the following:
@@ -21,13 +21,13 @@ However, due to the presence of a submodule we recomend to download it using the
 
 ## How to run
 
-To run **CORAL** you just need to modify the 'CORAL-config.yaml' with your parameters and execute it as any other _Snakemake_ file. We recomend to use _conda_ so it will create an environment where install all the dependecies specified in the 'CORAL-env.yml' file. The command will be like:
+To run **CORAL** you just need to modify the 'CORAL-config.yaml' with your parameters and execute it as any other _Snakemake_ file. We recomend to use _conda_ so it will create an environment where install all the dependecies specified in the 'CORAL-env.yml' and 'CORAL-env.merg.yml' files. The command will be like:
 
     snakemake --use-conda --snakefile CORAL.smk --configfile CORAL-config.yaml --cores 4
 
 ## Output files
 
-The CORAL pipeline will create several folders including:
+The CORAL pipeline creates several folders including:
 * **alignments**: contains all the reads alignments for each sample individually.
 * **index**: contains the minimap2 index of the genome.
 * **logs**: contais several log files of diffrent processes (i.e.: minimap2, input_files_stats, etc.).
