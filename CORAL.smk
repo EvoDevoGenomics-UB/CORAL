@@ -17,7 +17,7 @@ env_file2 = path.join(path.dirname(workflow.snakefile),"envs/CORAL-env.merge.yml
 
 in_genome = config["genome_fasta"]
 REF = config["reference_annot"]
-exeOpF = "./gamba-tool"
+#exeOpF = "./gamba-tool"
 
 def validate_samplesheet(samples_df):
     """Validate sample sheet and return dict of sample -> list of FASTQ paths."""
@@ -87,30 +87,34 @@ rule all:
         rule_all_input_list
 
 rule dump_versions:
-    output: ver = "versions.txt"
+    log: ver = "versions.txt"
     conda: env_file
-    shell: "command -v conda > /dev/null && conda list > {output.ver}"
+    shell: "command -v conda > /dev/null && conda list > {log.ver}"
 
 rule build_GAMBA:
     output: "gamba-tool"
+    params:
+        snakedir = SNAKEDIR,
+        workdir = WORKDIR
     conda: env_file
+    log: "logs/build_GAMBA.log"
     shell: """
-    cd {SNAKEDIR}/scripts/gamba-tool
+    cd {params.snakedir}/scripts/gamba-tool
     cargo build --release
-    cd {WORKDIR}
-    cp -r {SNAKEDIR}/scripts/gamba-tool/target/release/{output} {WORKDIR}
-    {WORKDIR}/{output} --help
+    cd {params.workdir}
+    cp -r {params.snakedir}/scripts/gamba-tool/target/release/{output} {params.workdir}
+    {params.workdir}/{output} --help
     """
 
 ## Check input files
 rule input_files_stats:
     input:
         fastq = lambda wc: SAMPLE_TO_FASTQ[wc.sample]
-    output:
+    log:
         file="logs/{specie}_{sample}_stats_input_reads.txt"
     conda: env_file
     shell:"""
-        seqkit stats {input.fastq} -o {output.file}
+        ( seqkit stats {input.fastq} ) 2&1> {log.file}
     """
 
 ## Alignments of the reads by minimap2 & samtools
@@ -130,10 +134,11 @@ rule build_minimap_index:
     params:
         opts = config["minimap_index_opts"]
     conda: env_file
+    log: "logs/log_minimap2_{specie}_genome_index.log"
     threads: config["threads"]
     shell:"""
-        minimap2 -t {threads} {params.opts} -I 1000G -d {output.index} {input.genome}
-        samtools faidx {input.genome}
+        (minimap2 -t {threads} {params.opts} -I 1000G -d {output.index} {input.genome}
+        samtools faidx {input.genome}) 2&1> {log}
     """
 
 rule prepare_fastqs:
@@ -142,15 +147,16 @@ rule prepare_fastqs:
     output:
         fq = temp("tmp/{sample}_concatenated.fastq")
     conda: env_file
+    log: "logs/log_prepare_fastqs_{sample}.log"
     shell: """
-    mkdir -p tmp
+    (mkdir -p tmp
     if [ $(echo {input} | wc -w) -ge 2 ]; then
         echo "Concatenating FASTQ files for {wildcards.sample}..."
         seqkit seq {input} > {output.fq}
     else
         echo "Single FASTQ for {wildcards.sample}, copying..."
         ln -sf {input} {output.fq}
-    fi
+    fi )2> {log}
     """
 
 rule run_minimap2:
@@ -167,7 +173,7 @@ rule run_minimap2:
     log: "logs/{specie}_{sample}_v{intron}_minimap2_run.log"
     shell: """
     (minimap2 -t {threads} {params.opts} -G {params.max_intron} {input.index} {input.fastq} > {output.sam} ; \
-    head -2 {output.sam} ) 2> {log}
+    head -2 {output.sam} ) 2&1> {log}
     echo "Minimap2 alignment done: {output.sam} created"
     """
 
@@ -182,12 +188,13 @@ rule run_samtools:
         qual = config["minimum_mapping_quality"]
     threads: config["threads"]
     conda: env_file
+    log: "logs/log_{specie}_{sample}_reads_aln_v{intron}_samtools.log"
     shell:"""
-    samtools view -h -bt {input.index} {input.sam} | seqkit bam -j {threads} -q {params.qual} -x -\
+    (samtools view -h -bt {input.index} {input.sam} | seqkit bam -j {threads} -q {params.qual} -x -\
     | samtools sort -@ {threads} -O BAM -o {output.bam} -;
     echo \"BAM created: {output.bam}\"
     samtools index {output.bam}
-    echo \"Index created: {output.bai}\"
+    echo \"Index created: {output.bai}\" ) 2> {log}
     """
 
 rule run_aling_stats:
@@ -197,8 +204,9 @@ rule run_aling_stats:
         stats="alignments/{specie}_{sample}_reads_aln_sorted_v{intron}.stats.txt"
     conda: env_file
     threads: config["threads"]
+    log: "logs/log_{specie}_{sample}_reads_aln_sorted_v{intron}.stats.log"
     shell:"""
-    samtools stats -@ {threads} {input.bam} > {output.stats}
+    (samtools stats -@ {threads} {input.bam} > {output.stats} ) 2> {log}
     """
 
 #Stringite v3.0
@@ -214,22 +222,24 @@ rule run_stringtie_sample_annotations:
         gtf = "sample_annotations/{specie}_{sample}_guide{ref}_v{intron}.gtf"
     params:
         opts = config["stringtie_opts"],
-        strand = config["stringtie_strand"]
+        strand = config["stringtie_strand"],
+        ref_annot = REF
     conda: env_file
+    log: "logs/log_stringtie_annotation_{specie}_{sample}_guide{ref}_v{intron}.log"
     threads: config["threads"]
     shell:"""
-        mkdir -p sample_annotations
+        (mkdir -p sample_annotations
         input_guide=\"{wildcards.ref}\"
         stringtie --version
         if [ $input_guide == "REF" ] ; then
-            echo \"Comand: stringtie --fr -L -R -p {threads} {params.opts} -G {REF} -o {output.gtf} {input.bam}\"
-            stringtie {params.strand} -L -R -p {threads} {params.opts} -G {REF} -o {output.gtf} {input.bam}
+            echo \"Comand: stringtie --fr -L -R -p {threads} {params.opts} -G {params.ref_annot} -o {output.gtf} {input.bam}\"
+            stringtie {params.strand} -L -R -p {threads} {params.opts} -G {params.ref_annot} -o {output.gtf} {input.bam}
             echo \"Stringtie {wildcards.ref} guided gtf created: {output.gtf}\"
         else
             echo \"Comand: stringtie --fr -L -R -p {threads} {params.opts} -o {output.gtf} {input.bam}\"
             stringtie {params.strand} -L -R -p {threads} {params.opts} -o {output.gtf} {input.bam} ; \
             echo \"Stringtie no-guide no-assembly gtf created: {output.gtf}\"
-        fi
+        fi ) 2> {log}
         """
 
 ##Find and annotate operons and contained genes
@@ -259,7 +269,7 @@ rule run_GAMBA_and_sanatizing:
     threads: config["threads"]
     shell:"""
     mkdir -p GAMBA_results
-    {exeOpF} -f {input.gtf} --threshold {params.threshold} -o {params.name} --log {log}
+    ./{input.GAMBA} -f {input.gtf} --threshold {params.threshold} -o {params.name} --log {log}
     
     awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
     else print $0}}\' {params.name}_Operons_t{params.threshold}.gtf > {params.name}_Operons_t{params.threshold}.tmp ; \
@@ -298,11 +308,14 @@ rule run_operon_annotation:
         excluded_file = "annotations/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.sorted_OPRNvalidation.excluded.gtf"
     params:
         g_param = config["stringtie_g"],
-        name = "{specie}_guide{ref}_v{intron}_gambat{threshold}"
-    log: "logs/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.sorted_OPRNvalidation.log"
+        name = "{specie}_guide{ref}_v{intron}_gambat{threshold}",
+        script_operon_validation = SNAKEDIR +"/scripts/operon_validation.py"
+    log: 
+        logOPRN = "logs/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.sorted_OPRNvalidation.log",
+        logSTRG = "logs/log_StrignTie_merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
     conda: env_file
     shell:"""
-    mkdir -p annotations
+    (mkdir -p annotations
     (for i in {input.gtfsopgenes} ; do echo $i ; done) > annotations/List_merge_OpGs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt ; \
     stringtie --merge -l OpG -f 0 -F 0 -T 0 -c 0 -g '-60' -o {output.opgenesgtf} annotations/List_merge_OpGs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt ; \
     grep 'StringTie	transcript' {output.opgenesgtf} | wc -l ; \
@@ -311,8 +324,8 @@ rule run_operon_annotation:
     cat {output.operongtf} {output.opgenesgtf} > {params.name}.tmp.gtf ; \
     gffread --sort-alpha -F -T -o {output.merge} {params.name}.tmp.gtf ; rm {params.name}.tmp.gtf
 
-    python3 {SNAKEDIR}/scripts/operon_validation.py -f {output.merge} --log {log}
-    grep 'StringTie	transcript' {output.opgenesgtfCLEAN} | wc -l ; \
+    python {params.script_operon_validation} -f {output.merge} --log {log.logOPRN}
+    grep 'StringTie	transcript' {output.opgenesgtfCLEAN} | wc -l ; ) 2&1> {log.logSTRG}
     """
 
 #Create gene final concensus annotations
@@ -326,16 +339,16 @@ rule run_gCLEAN_annotation:
         g_param = config["stringtie_g"],
         opts = config["stringtie_merge_opts"]
     conda: env_file
+    log: "logs/log_StrignTie_merge_opCLEAN_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
     shell:"""
-    (for i in {input.gtfsclean} ; do echo $i ; done ) > annotations/List_merge_opCLEAN.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt ; \
+    ((for i in {input.gtfsclean} ; do echo $i ; done ) > annotations/List_merge_opCLEAN.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt ; \
     stringtie --version
 
     stringtie --merge annotations/List_merge_opCLEAN.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt \
      -l g -f {params.freq} {params.opts} -g {params.g_param} \
      -o {output.cleanfinal} ; \
     echo "  Final merge CLEAN done" ; \
-    grep 'StringTie	transcript' {output.cleanfinal} | wc -l ;
-
+    grep 'StringTie	transcript' {output.cleanfinal} | wc -l ) 2&1> {log}
     """
 
 #Create Merge final concensus annotations
@@ -352,9 +365,9 @@ rule run_final_annotation:
         freq = config["stringtie_freq"],
         g_param = config["stringtie_g"]
     conda: env_file2
+    log: "logs/log_final_annotations_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
     shell:"""
-    
-    stringtie --merge {input.cleanfinal} {input.excluded_file} \
+    (stringtie --merge {input.cleanfinal} {input.excluded_file} \
      -G {input.opgenesgtf} \
      -l g -f {params.freq} -F 0 -T 0 -c 0 -g {params.g_param} \
      -o {output.noOPRNs} ; \
@@ -366,8 +379,7 @@ rule run_final_annotation:
      -l g -f {params.freq} -F 0 -T 0 -c 0 -g {params.g_param} \
      -o {output.andOPRNs} ; \
     echo "  Final CLEAN-and-OPRNs done"
-    grep 'StringTie	transcript' {output.andOPRNs} | wc -l 
-
+    grep 'StringTie	transcript' {output.andOPRNs} | wc -l ) 2&1> {log}
     """
 
 ##Extra things
@@ -397,10 +409,13 @@ rule run_longest_trans_filter:
         gtf = rules.run_final_annotation.output.noOPRNs
     output:
         filtergtf = "annotations/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs_longest_trans_only.gtf"
+    params:
+        script_long_trnas_filter = "{SNAKEDIR}/scripts/Longest_transcript_filter.py"
     conda: env_file
+    log: "logs/log_long_trans_filter_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.log"
     shell:"""
-    python {SNAKEDIR}/scripts/Longest_transcript_filter.py {input.gtf}
-    touch {output.filtergtf}
+    (python {params.script_long_trnas_filter} {input.gtf}
+    touch {output.filtergtf} ) 2> {log}
     """
 
 rule run_obtaining_fasta:
@@ -414,11 +429,12 @@ rule run_obtaining_fasta:
         fasta_noOPRNs = "busco_analysis/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.fasta" ,
         fasta_andOPRNs = "busco_analysis/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-and-OPRNs.fasta"
     conda: env_file
+    log: "logs/log_obtaining_fasta_GTFs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
     shell:"""
-    mkdir -p busco_analysis
+    (mkdir -p busco_analysis
     gffread -g {input.genome} -w {output.fasta} {input.gtf}
     gffread -g {input.genome} -w {output.fasta_noOPRNs} {input.gtf_noOPRNs}
-    gffread -g {input.genome} -w {output.fasta_andOPRNs} {input.gtf_andORPNs}
+    gffread -g {input.genome} -w {output.fasta_andOPRNs} {input.gtf_andORPNs} ) 2> {log}
     """
 rule busco_download_lineage:
     output:
@@ -426,8 +442,9 @@ rule busco_download_lineage:
     params:
         lineage = config["lineages"]
     conda: env_file
+    log: "logs/log_busco_download_lineage.log"
     shell:"""
-        busco --download {params.lineage} --download_path {output.lin_dir}
+        (busco --download {params.lineage} --download_path {output.lin_dir} ) 2> {log}
     """
 rule run_busco_analyses:
     input:
@@ -442,10 +459,11 @@ rule run_busco_analyses:
     params:
         lineage = config["lineages"]
     conda: env_file
-    shell:"""
+    log: "logs/log_BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
+    shell:""" (
         busco -i {input.fa_longtrans} -l {input.lin_dir} -o {output.out_longtrans} -m transcriptome
         busco -i {input.fa_noOPRNs} -l {input.lin_dir} -o {output.out_noOPRNs} -m transcriptome
-        busco -i {input.fa_andOPRNs} -l {input.lin_dir} -o {output.out_andOPRNs} -m transcriptome
+        busco -i {input.fa_andOPRNs} -l {input.lin_dir} -o {output.out_andOPRNs} -m transcriptome ) 2> {log}
     """
 
 rule run_busco_reference_annot:
@@ -459,10 +477,11 @@ rule run_busco_reference_annot:
     params:
         lineage = config["lineages"]
     conda: env_file
-    shell:"""
+    log: "logs/log_busco_reference_annot_{specie}.log"
+    shell:""" (
         mkdir -p busco_analysis
         gffread -g {input.genome} -w {output.fasta} {input.ref_annot}
-        busco -i {output.fasta} -l {input.lin_dir} -o {output.out_ref} -m transcriptome
+        busco -i {output.fasta} -l {input.lin_dir} -o {output.out_ref} -m transcriptome ) 2> {log}
     """
 
 busco_ref_input=[]
@@ -477,16 +496,20 @@ rule busco_plot:
         out_ref = busco_ref_input
     output:
         out_dir = directory("busco_analysis/BUSCO_results_all_summaries_{specie}_guide{ref}_v{intron}_gambat{threshold}")
+    params:
+        workdir = WORKDIR,
+        snakedir = SNAKEDIR
     conda: env_file
-    shell:"""
+    log: "logs/log_busco_polt_BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
+    shell:""" (
         mkdir -p {output.out_dir}
-        cp {WORKDIR}{input.out_longtrans}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.noOPRNs_longtrans.txt
-        cp {WORKDIR}{input.out_noOPRNs}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.noOPRNs.txt
-        cp {WORKDIR}{input.out_andOPRNs}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.andOPRNs.txt
-        if [ -n "{WORKDIR}{input.out_ref}" ]; then
-            cp {WORKDIR}{input.out_ref}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.REF.txt
+        cp {params.workdir}{input.out_longtrans}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.noOPRNs_longtrans.txt
+        cp {params.workdir}{input.out_noOPRNs}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.noOPRNs.txt
+        cp {params.workdir}{input.out_andOPRNs}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.andOPRNs.txt
+        if [ -n "{params.workdir}{input.out_ref}" ]; then
+            cp {params.workdir}{input.out_ref}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.REF.txt
         fi
-        python3 {SNAKEDIR}/scripts/generate_plot.py -wd {output.out_dir}
+        python3 {params.snakedir}/scripts/generate_plot.py -wd {output.out_dir} ) 2> {log}
     """
 
 ####FINAL steps
@@ -501,9 +524,10 @@ rule run_recover_coverage:
         gtfFinal = "annotations/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-and-OPRNs.counts.gtf",
         gtfFinal2 = "annotations/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.counts.gtf"
     conda: env_file
-    shell: """
+    log: "logs/log_recover_coverage_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
+    shell: """ (
     stringtie -G {input.gtf2} -e -o {output.gtfFinal2} {input.bams}
-    stringtie -G {input.gtf} -e -o {output.gtfFinal} {input.bams}
+    stringtie -G {input.gtf} -e -o {output.gtfFinal} {input.bams} ) 2> {log}
     """
 
 ##Comparing new annoatation againts reference one
@@ -523,7 +547,8 @@ rule run_gffcompare:
     params:
         prefix = "{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}"
     conda: env_file
-    shell:"""
+    log: "logs/log_gffcomapre_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
+    shell:""" (
     if [[ {input.ref} == "" ]] ; then
         echo \"Error: No reference annotation provided.\" >&2
         exit 1
@@ -541,7 +566,7 @@ rule run_gffcompare:
             done) > $i.gffcmp_trans_types.txt
             echo "File '$i.gffcmp_trans_types.txt' created."
         done
-    fi
+    fi ) 2> {log}
     """
 
 ###For expression matrix creation:
@@ -555,7 +580,9 @@ rule run_expression_matrix:
     params:
         result_dir = directory("Expression_matrix/{specie}"),
         samples = config["samples"],
-        length = config["length"]
+        length = config["length"],
+        script_strintie_counts = SNAKEDIR + "/scripts/StringTie_counts.py",
+        script_prepDE = SNAKEDIR + "/scripts/prepDE.py3"
     conda: env_file
     log:
         log1 = "logs/run_expression_matrix_part1.{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log",
@@ -565,10 +592,10 @@ rule run_expression_matrix:
     # Create output directory for Stringtie counts
     mkdir -p "{params.result_dir}"
     
-    samplelist=$(python {SNAKEDIR}/scripts/StringTie_counts.py \
+    samplelist=$(python {params.script_strintie_counts} \
      -f {input.gtf} -b {input.bams} --outdir {params.result_dir} -t {threads}  --log {log.log1})
     
     # Create final matrix with all counts
     (echo "Create final matrix with all counts"
-    python {SNAKEDIR}/scripts/prepDE.py3 -l {params.length} -i $samplelist -g {output.out_file_g} -t {output.out_file_t} ) 2> {log.log2}
+    python {params.script_prepDE} -l {params.length} -i $samplelist -g {output.out_file_g} -t {output.out_file_t} ) 2&1> {log.log2}
     """
