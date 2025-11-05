@@ -74,7 +74,7 @@ rule_all_input_list=["versions.txt","operon-finder",
         expand("busco_analysis/BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_andOPRNs", specie=config["specie"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("busco_analysis/BUSCO_results_all_summaries_{specie}_guide{ref}_v{intron}_gambat{threshold}", specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"])]
 
-if config["reference_annot"]:
+if config["reference_annot"] not in (None, [], ""):
     rule_all_input_list.append(expand("busco_analysis/BUSCO_trans_{specie}_LRannot_REF", specie=config["specie"]))
     if config["run_gffcomapre"] == True :
         rule_all_input_list.append(expand("Gffcompare_results/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}",specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]))        
@@ -149,7 +149,7 @@ rule prepare_fastqs:
         seqkit seq {input} > {output.fq}
     else
         echo "Single FASTQ for {wildcards.sample}, copying..."
-        cp {input} {output.fq}
+        ln -sf {input} {output.fq}
     fi
     """
 
@@ -465,12 +465,16 @@ rule run_busco_reference_annot:
         busco -i {output.fasta} -l {input.lin_dir} -o {output.out_ref} -m transcriptome
     """
 
+busco_ref_input=[]
+if config["reference_annot"] not in (None, [], ""):
+    busco_ref_input.append("busco_analysis/BUSCO_trans_{specie}_LRannot_REF")
+
 rule busco_plot:
     input:
         out_longtrans = "busco_analysis/BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNs_longest_trans_only",
         out_noOPRNs = "busco_analysis/BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNs",
         out_andOPRNs = "busco_analysis/BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_andOPRNs",
-        out_ref = "busco_analysis/BUSCO_trans_{specie}_LRannot_REF"
+        out_ref = busco_ref_input
     output:
         out_dir = directory("busco_analysis/BUSCO_results_all_summaries_{specie}_guide{ref}_v{intron}_gambat{threshold}")
     conda: env_file
@@ -479,9 +483,11 @@ rule busco_plot:
         cp {WORKDIR}{input.out_longtrans}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.noOPRNs_longtrans.txt
         cp {WORKDIR}{input.out_noOPRNs}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.noOPRNs.txt
         cp {WORKDIR}{input.out_andOPRNs}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.andOPRNs.txt
-        cp {WORKDIR}{input.out_ref}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.REF.txt
+        if [ -n "{WORKDIR}{input.out_ref}" ]; then
+            cp {WORKDIR}{input.out_ref}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.REF.txt
+        fi
         python3 {SNAKEDIR}/scripts/generate_plot.py -wd {output.out_dir}
-        """
+    """
 
 ####FINAL steps
 #Obtaining coverage of final annotation
@@ -539,14 +545,10 @@ rule run_gffcompare:
     """
 
 ###For expression matrix creation:
-bam_samples=[]
-for SAMPLE in config["samples"]:
-    bam_samples.append("alignments/{{specie}}_{}_reads_aln_v{{intron}}.sorted.bam".format(SAMPLE))
-
 rule run_expression_matrix:
     input:
         gtf = rules.run_final_annotation.output.andOPRNs ,
-        bams = bam_samples
+        bams = expand("alignments/{{specie}}_{sample}_reads_aln_v{{intron}}.sorted.bam", sample=SAMPLES)
     output:
         out_file_g = "Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-and-OPRNs/gene_count_matrix.csv",
         out_file_t = "Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-and-OPRNs/transcript_count_matrix.csv"
