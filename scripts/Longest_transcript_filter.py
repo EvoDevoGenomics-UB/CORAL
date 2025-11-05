@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import gffutils # type: ignore
 import sys
 import os

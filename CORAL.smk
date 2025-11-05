@@ -1,5 +1,9 @@
 import os
 from os import path
+import pandas as pd
+from collections import defaultdict
+import sys
+
 from snakemake.utils import min_version
 min_version("5.24")
 
@@ -15,12 +19,51 @@ in_genome = config["genome_fasta"]
 REF = config["reference_annot"]
 exeOpF = "./gamba-tool"
 
+def validate_samplesheet(samples_df):
+    """Validate sample sheet and return dict of sample -> list of FASTQ paths."""
+    grouped = defaultdict(list)
+    seen_paths = defaultdict(list)
+    for _, row in samples_df.iterrows():
+        sample = str(row.iloc[0])
+        fq = str(row.iloc[1])
+        if not os.path.exists(fq):
+            print(f"ERROR: Missing FASTQ file for sample '{sample}': {fq}", file=sys.stderr)
+            sys.exit(1)
+        grouped[sample].append(fq)
+        seen_paths[fq].append(sample)
+    # Check for duplicates within a sample
+    for sample, fqs in grouped.items():
+        if len(fqs) != len(set(fqs)):
+            print(f"ERROR: Sample '{sample}' lists the same FASTQ file multiple times.", file=sys.stderr)
+            sys.exit(1)
+    # Check for FASTQs reused across samples
+    reused = {fq: s for fq, s in seen_paths.items() if len(set(s)) > 1}
+    if reused:
+        print("ERROR: Some FASTQ files are used by multiple samples:", file=sys.stderr)
+        for fq, s in reused.items():
+            print(f"  {fq}  ->  samples: {', '.join(set(s))}", file=sys.stderr)
+        sys.exit(1)
+    print(f"[INFO] Loaded {len(grouped)} samples, all FASTQ paths validated.")
+    return grouped
+
+# Load and validate samples
+if "samplesheet" in config and config["samplesheet"]:
+    samples_df = pd.read_csv(config["samplesheet"], sep="\t", header=None)
+    SAMPLE_TO_FASTQ = validate_samplesheet(samples_df)
+    SAMPLES = list(SAMPLE_TO_FASTQ.keys())
+else:
+    SAMPLES = config["samples"]
+    SAMPLE_TO_FASTQ = {
+        s: [os.path.join(config["data_dir"], f"{s}{config['data_sufix']}")]
+        for s in SAMPLES
+    }
+
 rule_all_input_list=["versions.txt","operon-finder",
-        expand("logs/{specie}_{sample}_stats_input_reads.txt", specie=config["specie"], sample=config["samples"]),
-        expand("alignments/{specie}_{sample}_reads_aln_v{intron}.sorted.bam", specie=config["specie"], sample=config["samples"], intron=config["minimap2_max_intron"]),
-        expand("alignments/{specie}_{sample}_reads_aln_sorted_v{intron}.stats.txt", specie=config["specie"], sample=config["samples"], intron=config["minimap2_max_intron"]),
-        expand("sample_annotations/{specie}_{sample}_guide{ref}_v{intron}.gtf", specie=config["specie"], sample=config["samples"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"]),
-        expand("GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_opCLEAN_t{threshold}.clean.gtf", specie=config["specie"], sample=config["samples"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+        expand("logs/{specie}_{sample}_stats_input_reads.txt", specie=config["specie"], sample=SAMPLES),
+        expand("alignments/{specie}_{sample}_reads_aln_v{intron}.sorted.bam", specie=config["specie"], sample=SAMPLES, intron=config["minimap2_max_intron"]),
+        expand("alignments/{specie}_{sample}_reads_aln_sorted_v{intron}.stats.txt", specie=config["specie"], sample=SAMPLES, intron=config["minimap2_max_intron"]),
+        expand("sample_annotations/{specie}_{sample}_guide{ref}_v{intron}.gtf", specie=config["specie"], sample=SAMPLES, ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"]),
+        expand("GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_opCLEAN_t{threshold}.clean.gtf", specie=config["specie"], sample=SAMPLES, ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("annotations/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.sorted.gtf", specie=config["specie"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("annotations/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-and-OPRNs.gtf", specie=config["specie"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("annotations/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs_longest_trans_only.gtf", specie=config["specie"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
@@ -29,11 +72,12 @@ rule_all_input_list=["versions.txt","operon-finder",
         expand("busco_analysis/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.fasta", specie=config["specie"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("busco_analysis/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-and-OPRNs.fasta", specie=config["specie"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("busco_analysis/BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_andOPRNs", specie=config["specie"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        expand("busco_analysis/BUSCO_results_all_summaries_{specie}_guide{ref}_v{intron}_gambat{threshold}", specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        expand("busco_analysis/BUSCO_trans_{specie}_LRannot_REF", specie=config["specie"])]
+        expand("busco_analysis/BUSCO_results_all_summaries_{specie}_guide{ref}_v{intron}_gambat{threshold}", specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"])]
 
-if config["run_gffcomapre"] == True :
-    rule_all_input_list.append(expand("Gffcompare_results/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}",specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]))        
+if config["reference_annot"] not in (None, [], ""):
+    rule_all_input_list.append(expand("busco_analysis/BUSCO_trans_{specie}_LRannot_REF", specie=config["specie"]))
+    if config["run_gffcomapre"] == True :
+        rule_all_input_list.append(expand("Gffcompare_results/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}",specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]))        
 
 if config["run_expression_matrix"] == True :
     rule_all_input_list.append(expand("Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-and-OPRNs/transcript_count_matrix.csv",specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]))        
@@ -61,7 +105,7 @@ rule build_GAMBA:
 ## Check input files
 rule input_files_stats:
     input:
-        fastq = config["data_dir"] + "{sample}" + config["data_sufix"]
+        fastq = lambda wc: SAMPLE_TO_FASTQ[wc.sample]
     output:
         file="logs/{specie}_{sample}_stats_input_reads.txt"
     conda: env_file
@@ -74,17 +118,16 @@ rule do_alignment:
     input:
         expand("index/{prefix}_genome_index.mmi", prefix=config["specie"]),
         expand("alignments/{specie}_{sample}_reads_aln_v{intron}.sorted.bam",
-            specie=config["specie"], sample=config["samples"], intron=config["minimap2_max_intron"]),
+            specie=config["specie"], sample=SAMPLES, intron=config["minimap2_max_intron"]),
         expand("alignments/{specie}_{sample}_reads_aln_sorted_v{intron}.stats.txt", 
-            specie=config["specie"], sample=config["samples"], intron=config["minimap2_max_intron"])
+            specie=config["specie"], sample=SAMPLES, intron=config["minimap2_max_intron"])
 
 rule build_minimap_index:
     input:
         genome = in_genome
     output:
-        index = "index/{prefix}_genome_index.mmi"
+        index = "index/{specie}_genome_index.mmi"
     params:
-        prefix = config["specie"],
         opts = config["minimap_index_opts"]
     conda: env_file
     threads: config["threads"]
@@ -93,37 +136,60 @@ rule build_minimap_index:
         samtools faidx {input.genome}
     """
 
+rule prepare_fastqs:
+    input:
+        fastq = lambda wc: SAMPLE_TO_FASTQ[wc.sample]
+    output:
+        fq = temp("tmp/{sample}_concatenated.fastq")
+    conda: env_file
+    shell: """
+    mkdir -p tmp
+    if [ $(echo {input} | wc -w) -ge 2 ]; then
+        echo "Concatenating FASTQ files for {wildcards.sample}..."
+        seqkit seq {input} > {output.fq}
+    else
+        echo "Single FASTQ for {wildcards.sample}, copying..."
+        ln -sf {input} {output.fq}
+    fi
+    """
+
 rule run_minimap2:
     input:
-        index = "index/{specie}_genome_index.mmi",
-        fastq = config["data_dir"] + "{sample}" + config["data_sufix"]
+        index = rules.build_minimap_index.output,
+        fastq = rules.prepare_fastqs.output.fq
     output:
-        bam = "alignments/{specie}_{sample}_reads_aln_v{intron}.sorted.bam"
+        sam = temp("alignments/{specie}_{sample}_reads_aln_v{intron}.sam")
     params:
-        name = "alignments/{specie}_{sample}_reads_aln_v{intron}",
         opts = config["minimap2_opts"],
-        max_intron = config["minimap2_max_intron"],
-        qual = config["minimum_mapping_quality"],
-        genome_fai = in_genome + ".fai"
+        max_intron = config["minimap2_max_intron"]
     threads: config["threads"]
     conda: env_file
     log: "logs/{specie}_{sample}_v{intron}_minimap2_run.log"
     shell: """
-    if [ -f "{params.name}.sam" ]; then
-        echo \"{params.name}.sam already created\"
-    else
-        (minimap2 -t {threads} {params.opts} -G {params.max_intron} {input.index} {input.fastq} > {params.name}.sam ; \
-        head -2 {params.name}.sam ) 2> {log}
-        echo \"Minimap2 alignment done: {params.name}.sam created\"
-    fi
-
-    samtools view -h -bt {input.index} {params.name}.sam | seqkit bam -j {threads} -q {params.qual} -x -\
-    | samtools sort -@ {threads} -O BAM -o {output.bam} -;
-
-    echo \"{output.bam} created\"
-    samtools index {output.bam}
+    (minimap2 -t {threads} {params.opts} -G {params.max_intron} {input.index} {input.fastq} > {output.sam} ; \
+    head -2 {output.sam} ) 2> {log}
+    echo "Minimap2 alignment done: {output.sam} created"
     """
-    
+
+rule run_samtools:
+    input:
+        sam = rules.run_minimap2.output.sam,
+        index = rules.build_minimap_index.output
+    output:
+        bam = protected("alignments/{specie}_{sample}_reads_aln_v{intron}.sorted.bam"),
+        bai = "alignments/{specie}_{sample}_reads_aln_v{intron}.sorted.bam.bai"
+    params:
+        qual = config["minimum_mapping_quality"]
+    threads: config["threads"]
+    conda: env_file
+    shell:"""
+    samtools view -h -bt {input.index} {input.sam} | seqkit bam -j {threads} -q {params.qual} -x -\
+    | samtools sort -@ {threads} -O BAM -o {output.bam} -;
+    echo \"BAM created: {output.bam}\"
+    samtools index {output.bam}
+    echo \"Index created: {output.bai}\"
+    """
+
 rule run_aling_stats:
     input:
         bam = "alignments/{specie}_{sample}_reads_aln_v{intron}.sorted.bam"
@@ -139,7 +205,7 @@ rule run_aling_stats:
 rule do_stringtie_sample_annotations:
     input:
         expand("sample_annotations/{specie}_{sample}_guide{ref}_v{intron}.gtf", 
-            specie=config["specie"], sample=config["samples"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"])
+            specie=config["specie"], sample=SAMPLES, ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"])
 
 rule run_stringtie_sample_annotations:
     input: 
@@ -169,10 +235,10 @@ rule run_stringtie_sample_annotations:
 ##Find and annotate operons and contained genes
 rule do_operon_annotations:
     input:
-        expand("GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_operons_found_t{threshold}.tsv", specie=config["specie"], sample=config["samples"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        expand("GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_Operons_t{threshold}.clean.gtf", specie=config["specie"], sample=config["samples"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        expand("GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_OperonGenes_t{threshold}.clean.gtf", specie=config["specie"], sample=config["samples"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        expand("GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_opCLEAN_t{threshold}.clean.gtf", specie=config["specie"], sample=config["samples"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+        expand("GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_operons_found_t{threshold}.tsv", specie=config["specie"], sample=SAMPLES, ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+        expand("GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_Operons_t{threshold}.clean.gtf", specie=config["specie"], sample=SAMPLES, ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+        expand("GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_OperonGenes_t{threshold}.clean.gtf", specie=config["specie"], sample=SAMPLES, ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+        expand("GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_opCLEAN_t{threshold}.clean.gtf", specie=config["specie"], sample=SAMPLES, ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("annotations/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.sorted.gtf", specie=config["specie"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"])
 
 #Rust script GAMBA
@@ -324,8 +390,7 @@ rule do_busco_analyses:
         expand("busco_analysis/BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_andOPRNs",
             specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("busco_analysis/BUSCO_results_all_summaries_{specie}_guide{ref}_v{intron}_gambat{threshold}",
-            specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        expand("busco_analysis/BUSCO_trans_{specie}_LRannot_REF", specie=config["specie"])
+            specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"])
         
 rule run_longest_trans_filter:
     input:
@@ -387,7 +452,7 @@ rule run_busco_reference_annot:
     input:
         lin_dir = rules.busco_download_lineage.output.lin_dir ,
         genome = in_genome ,
-        ref_annot = config["reference_annot"]
+        ref_annot = REF
     output:
         fasta = "busco_analysis/{specie}_LRannot_REF.fasta" ,
         out_ref = directory("busco_analysis/BUSCO_trans_{specie}_LRannot_REF")
@@ -400,12 +465,16 @@ rule run_busco_reference_annot:
         busco -i {output.fasta} -l {input.lin_dir} -o {output.out_ref} -m transcriptome
     """
 
+busco_ref_input=[]
+if config["reference_annot"] not in (None, [], ""):
+    busco_ref_input.append("busco_analysis/BUSCO_trans_{specie}_LRannot_REF")
+
 rule busco_plot:
     input:
         out_longtrans = "busco_analysis/BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNs_longest_trans_only",
         out_noOPRNs = "busco_analysis/BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNs",
         out_andOPRNs = "busco_analysis/BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_andOPRNs",
-        out_ref = "busco_analysis/BUSCO_trans_{specie}_LRannot_REF"
+        out_ref = busco_ref_input
     output:
         out_dir = directory("busco_analysis/BUSCO_results_all_summaries_{specie}_guide{ref}_v{intron}_gambat{threshold}")
     conda: env_file
@@ -414,9 +483,11 @@ rule busco_plot:
         cp {WORKDIR}{input.out_longtrans}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.noOPRNs_longtrans.txt
         cp {WORKDIR}{input.out_noOPRNs}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.noOPRNs.txt
         cp {WORKDIR}{input.out_andOPRNs}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.andOPRNs.txt
-        cp {WORKDIR}{input.out_ref}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.REF.txt
+        if [ -n "{WORKDIR}{input.out_ref}" ]; then
+            cp {WORKDIR}{input.out_ref}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.REF.txt
+        fi
         python3 {SNAKEDIR}/scripts/generate_plot.py -wd {output.out_dir}
-        """
+    """
 
 ####FINAL steps
 #Obtaining coverage of final annotation
@@ -425,7 +496,7 @@ rule run_recover_coverage:
         gtf = rules.run_final_annotation.output.andOPRNs ,
         gtf2 = rules.run_final_annotation.output.noOPRNs ,
         bams = expand("alignments/{specie}_{sample}_reads_aln_v{intron}.sorted.bam", 
-            specie=config["specie"], sample=config["samples"], intron=config["minimap2_max_intron"])
+            specie=config["specie"], sample=SAMPLES, intron=config["minimap2_max_intron"])
     output:
         gtfFinal = "annotations/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-and-OPRNs.counts.gtf",
         gtfFinal2 = "annotations/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.counts.gtf"
@@ -443,7 +514,7 @@ rule do_gffcompare:
 
 rule run_gffcompare:
     input:
-        ref = config["reference_annot"] ,
+        ref = REF ,
         gtf_longest = rules.run_longest_trans_filter.output.filtergtf ,
         gtf_noOPRNs = rules.run_final_annotation.output.noOPRNs ,
         gtf_andOPRNs = rules.run_final_annotation.output.andOPRNs
@@ -474,14 +545,10 @@ rule run_gffcompare:
     """
 
 ###For expression matrix creation:
-bam_samples=[]
-for SAMPLE in config["samples"]:
-    bam_samples.append("alignments/{{specie}}_{}_reads_aln_v{{intron}}.sorted.bam".format(SAMPLE))
-
 rule run_expression_matrix:
     input:
         gtf = rules.run_final_annotation.output.andOPRNs ,
-        bams = bam_samples
+        bams = expand("alignments/{{specie}}_{sample}_reads_aln_v{{intron}}.sorted.bam", sample=SAMPLES)
     output:
         out_file_g = "Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-and-OPRNs/gene_count_matrix.csv",
         out_file_t = "Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-and-OPRNs/transcript_count_matrix.csv"
@@ -490,40 +557,18 @@ rule run_expression_matrix:
         samples = config["samples"],
         length = config["length"]
     conda: env_file
+    log:
+        log1 = "logs/run_expression_matrix_part1.{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log",
+        log2 = "logs/run_expression_matrix_part2.{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
     threads: config["threads"]
     shell:"""
-    inputGTF=$(basename "{input.gtf}" .gtf)
-    echo "Input GTF is: $inputGTF.gtf"
-    inputBAM=$(for file in {input.bams} ; do basename "$file" "_reads_aln_v{wildcards.intron}.sorted.bam" ; done)
-    echo "Samples to include are: $inputBAM"
-
     # Create output directory for Stringtie counts
     mkdir -p "{params.result_dir}"
-    mkdir -p "{params.result_dir}/$inputGTF"
-
-    # Create counts for each sample in the directory
-    for sample in {params.samples} ; do
-        output_dir="{params.result_dir}/$inputGTF/${{sample}}"
-        output_gtf="$output_dir/${{sample}}.gtf"
-
-        mkdir -p "$output_dir"
-        # Check if the GTF file already exists
-        if [ -f "$output_gtf" ]; then
-            echo "GTF file for ${{sample}} already exists. Skipping..."
-            continue
-        fi
-
-        stringtie -eB -G {input.gtf} -p {threads} -o "$output_gtf" "alignments/{wildcards.specie}_${{sample}}_reads_aln_v{wildcards.intron}.sorted.bam"
-    done
-
-    # Create the list file for samples
-    ls {WORKDIR}{params.result_dir}/${{inputGTF}}/*/*.gtf > b.tmp ; 
-    echo $inputBAM | tr ' ' '\n' > a.tmp ;
-    paste a.tmp b.tmp > {params.result_dir}/${{inputGTF}}/ALL_sample_list.txt
-    rm a.tmp b.tmp
-
+    
+    samplelist=$(python {SNAKEDIR}/scripts/StringTie_counts.py \
+     -f {input.gtf} -b {input.bams} --outdir {params.result_dir} -t {threads}  --log {log.log1})
+    
     # Create final matrix with all counts
-    echo "Create final matrix with all counts"
-    python {SNAKEDIR}/scripts/prepDE.py3 -l {length} -i {params.result_dir}/${{inputGTF}}/ALL_sample_list.txt -g {output.out_file_g} -t {output.out_file_t}
-
+    (echo "Create final matrix with all counts"
+    python {SNAKEDIR}/scripts/prepDE.py3 -l {params.length} -i $samplelist -g {output.out_file_g} -t {output.out_file_t} ) 2> {log.log2}
     """
