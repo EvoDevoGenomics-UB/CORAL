@@ -173,7 +173,8 @@ rule run_minimap2:
 
 rule run_samtools:
     input:
-        sam = rules.run_minimap2.output.sam
+        sam = rules.run_minimap2.output.sam,
+        index = rules.build_minimap_index.output
     output:
         bam = protected("alignments/{specie}_{sample}_reads_aln_v{intron}.sorted.bam"),
         bai = "alignments/{specie}_{sample}_reads_aln_v{intron}.sorted.bam.bai"
@@ -557,40 +558,18 @@ rule run_expression_matrix:
         samples = config["samples"],
         length = config["length"]
     conda: env_file
+    log:
+        log1 = "logs/run_expression_matrix_part1.{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log",
+        log2 = "logs/run_expression_matrix_part2.{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
     threads: config["threads"]
     shell:"""
-    inputGTF=$(basename "{input.gtf}" .gtf)
-    echo "Input GTF is: $inputGTF.gtf"
-    inputBAM=$(for file in {input.bams} ; do basename "$file" "_reads_aln_v{wildcards.intron}.sorted.bam" ; done)
-    echo "Samples to include are: $inputBAM"
-
     # Create output directory for Stringtie counts
     mkdir -p "{params.result_dir}"
-    mkdir -p "{params.result_dir}/$inputGTF"
-
-    # Create counts for each sample in the directory
-    for sample in {params.samples} ; do
-        output_dir="{params.result_dir}/$inputGTF/${{sample}}"
-        output_gtf="$output_dir/${{sample}}.gtf"
-
-        mkdir -p "$output_dir"
-        # Check if the GTF file already exists
-        if [ -f "$output_gtf" ]; then
-            echo "GTF file for ${{sample}} already exists. Skipping..."
-            continue
-        fi
-
-        stringtie -eB -G {input.gtf} -p {threads} -o "$output_gtf" "alignments/{wildcards.specie}_${{sample}}_reads_aln_v{wildcards.intron}.sorted.bam"
-    done
-
-    # Create the list file for samples
-    ls {WORKDIR}{params.result_dir}/${{inputGTF}}/*/*.gtf > b.tmp ; 
-    echo $inputBAM | tr ' ' '\n' > a.tmp ;
-    paste a.tmp b.tmp > {params.result_dir}/${{inputGTF}}/ALL_sample_list.txt
-    rm a.tmp b.tmp
-
+    
+    samplelist=$(python {SNAKEDIR}/scripts/StringTie_counts.py \
+     -f {input.gtf} -b {input.bams} --outdir {params.result_dir} -t {threads}  --log {log.log1})
+    
     # Create final matrix with all counts
-    echo "Create final matrix with all counts"
-    python {SNAKEDIR}/scripts/prepDE.py3 -l {length} -i {params.result_dir}/${{inputGTF}}/ALL_sample_list.txt -g {output.out_file_g} -t {output.out_file_t}
-
+    (echo "Create final matrix with all counts"
+    python {SNAKEDIR}/scripts/prepDE.py3 -l {params.length} -i $samplelist -g {output.out_file_g} -t {output.out_file_t} ) 2> {log.log2}
     """
