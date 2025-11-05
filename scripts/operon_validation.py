@@ -40,7 +40,7 @@ else:
 if args.log:
     log_file = args.log
 else:
-    log_file = os.path.splitext(gtf_file)[0] + "_OPRNstatistics.log"
+    log_file = os.path.splitext(gtf_file)[0] + "_OPRNvalidation.log"
 #Define logger
 logging.basicConfig(filename= log_file, 
 					format='%(asctime)s %(levelname)s - %(message)s', 
@@ -54,7 +54,7 @@ if not os.path.isfile(gtf_file):
     sys.exit(1)
 
 # Create a database from the GTF file (stored in memory)
-db_filename = os.path.splitext(gtf_file)[0] + "_OPRNstatistics.db"
+db_filename = os.path.splitext(gtf_file)[0] + "_OPRNvalidation.db"
 db = gffutils.create_db(
     gtf_file,
     dbfn=db_filename,
@@ -67,9 +67,9 @@ print(f"File '{db_filename}' created.")
 logging.info(f"File '{db_filename}' created.")
 
 # Define output file
-output_file = out_prefix + "_OPRNstatistics.keep.tsv"
-output_file_outs = out_prefix + "_OPRNstatistics.removed.tsv"
-output_file_counts = out_prefix + "_OPRNstatistics.counts.tsv"
+output_file = out_prefix + "_OPRNvalidation.keep.tsv"
+output_file_outs = out_prefix + "_OPRNvalidation.removed.tsv"
+output_file_counts = out_prefix + "_OPRNvalidation.counts.tsv"
 # Dictionary to store transcripts per chromosome
 chrom_transcripts = defaultdict(list)
 
@@ -161,7 +161,7 @@ for transcript in db.features_of_type("transcript"):
         removed_trans_ids.append(transcript.id)
 
 # Define output GTF filenames
-operon_gtf_file = out_prefix + "_OPRNstatistics.clean.gtf"
+operon_gtf_file = out_prefix + "_OPRNvalidation.clean.gtf"
 # Write operon transcripts to GTF
 with open(operon_gtf_file, "w") as operon_out:
     for trans_id in all_trans_ids:
@@ -172,7 +172,7 @@ with open(operon_gtf_file, "w") as operon_out:
         for feature in db.children(trans_id, featuretype='exon', order_by='start'):
             operon_out.write(str(feature).replace('""', '') + "\n")
 # Define output GTF filenames
-operon_gtf_file = out_prefix + "_OPRNstatistics.OpGclean.gtf"
+operon_gtf_file = out_prefix + "_OPRNvalidation.OpGclean.gtf"
 # Write operon transcripts to GTF
 with open(operon_gtf_file, "w") as operon_out:
     for trans_id in gene_to_trans_ids:
@@ -183,7 +183,7 @@ with open(operon_gtf_file, "w") as operon_out:
         for feature in db.children(trans_id, featuretype='exon', order_by='start'):
             operon_out.write(str(feature).replace('""', '') + "\n")
 # Define output GTF filenames
-excuded_gtf_file = out_prefix + "_OPRNstatistics.excluded.gtf"
+excuded_gtf_file = out_prefix + "_OPRNvalidation.excluded.gtf"
 # Write operon transcripts to GTF
 with open(excuded_gtf_file, "w") as excluded_out:
     for trans_id in removed_trans_ids:
