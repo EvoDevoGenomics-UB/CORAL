@@ -152,12 +152,21 @@ rule run_minimap2:
     log: "logs/{specie}_{sample}_v{intron}_minimap2_run.log"
     shell: """
     if [ -f "{output.sam}" ]; then
-        echo \"{output.sam} already created\"
+        echo "{output.sam} already created"
     else
-        seqkit cat {input.fastq} > {wildcards.sample}.tmp.fastq
-        (minimap2 -t {threads} {params.opts} -G {params.max_intron} {input.index} {wildcards.sample}.tmp.fastq > {output.sam} ; \
-        head -2 {output.sam} ) 2> {log}
-        echo \"Minimap2 alignment done: {params.name}.sam created\"
+        if [ $(echo {input.fastq} | wc -w) -ge 2 ]; then
+            echo "Concatenating fastq files provided..."
+            cat {input.fastq} > {wildcards.sample}.tmp.fastq
+            echo "Starting minimap2 mapping..."
+            (minimap2 -t {threads} {params.opts} -G {params.max_intron} {input.index} {wildcards.sample}.tmp.fastq > {output.sam} ; \
+            head -2 {output.sam} ) 2> {log}
+        else
+            echo "Starting minimap2 mapping..."
+            (minimap2 -t {threads} {params.opts} -G {params.max_intron} {input.index} {input.fastq} > {output.sam} ; \
+            head -2 {output.sam} ) 2> {log}
+        fi
+        echo "Minimap2 alignment done: {output.sam} created"
+        if [ -f "{wildcards.sample}.tmp.fastq" ]; then rm {wildcards.sample}.tmp.fastq; fi
     fi
 
     samtools view -h -bt {input.index} {output.sam} | seqkit bam -j {threads} -q {params.qual} -x -\
