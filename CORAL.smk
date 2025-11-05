@@ -136,46 +136,59 @@ rule build_minimap_index:
         samtools faidx {input.genome}
     """
 
+rule prepare_fastqs:
+    input:
+        fastq = lambda wc: SAMPLE_TO_FASTQ[wc.sample]
+    output:
+        fq = temp("tmp/{sample}_concatenated.fastq")
+    conda: env_file
+    shell: """
+    mkdir -p tmp
+    if [ $(echo {input} | wc -w) -ge 2 ]; then
+        echo "Concatenating FASTQ files for {wildcards.sample}..."
+        seqkit seq {input} > {output.fq}
+    else
+        echo "Single FASTQ for {wildcards.sample}, copying..."
+        cp {input} {output.fq}
+    fi
+    """
+
 rule run_minimap2:
     input:
         index = rules.build_minimap_index.output,
-        fastq = lambda wc: SAMPLE_TO_FASTQ[wc.sample]
+        fastq = rules.prepare_fastqs.output.fq
     output:
-        sam = temp("alignments/{specie}_{sample}_reads_aln_v{intron}.sam"),
-        bam = protected("alignments/{specie}_{sample}_reads_aln_v{intron}.sorted.bam")
+        sam = temp("alignments/{specie}_{sample}_reads_aln_v{intron}.sam")
     params:
         opts = config["minimap2_opts"],
-        max_intron = config["minimap2_max_intron"],
-        qual = config["minimum_mapping_quality"]
+        max_intron = config["minimap2_max_intron"]
     threads: config["threads"]
     conda: env_file
     log: "logs/{specie}_{sample}_v{intron}_minimap2_run.log"
     shell: """
-    if [ -f "{output.sam}" ]; then
-        echo "{output.sam} already created"
-    else
-        if [ $(echo {input.fastq} | wc -w) -ge 2 ]; then
-            echo "Concatenating fastq files provided..."
-            cat {input.fastq} > {wildcards.sample}.tmp.fastq
-            echo "Starting minimap2 mapping..."
-            (minimap2 -t {threads} {params.opts} -G {params.max_intron} {input.index} {wildcards.sample}.tmp.fastq > {output.sam} ; \
-            head -2 {output.sam} ) 2> {log}
-        else
-            echo "Starting minimap2 mapping..."
-            (minimap2 -t {threads} {params.opts} -G {params.max_intron} {input.index} {input.fastq} > {output.sam} ; \
-            head -2 {output.sam} ) 2> {log}
-        fi
-        echo "Minimap2 alignment done: {output.sam} created"
-        if [ -f "{wildcards.sample}.tmp.fastq" ]; then rm {wildcards.sample}.tmp.fastq; fi
-    fi
-
-    samtools view -h -bt {input.index} {output.sam} | seqkit bam -j {threads} -q {params.qual} -x -\
-    | samtools sort -@ {threads} -O BAM -o {output.bam} -;
-
-    echo \"{output.bam} created\"
-    samtools index {output.bam}
+    (minimap2 -t {threads} {params.opts} -G {params.max_intron} {input.index} {input.fastq} > {output.sam} ; \
+    head -2 {output.sam} ) 2> {log}
+    echo "Minimap2 alignment done: {output.sam} created"
     """
-    
+
+rule run_samtools:
+    input:
+        sam = rules.run_minimap2.output.sam
+    output:
+        bam = protected("alignments/{specie}_{sample}_reads_aln_v{intron}.sorted.bam"),
+        bai = "alignments/{specie}_{sample}_reads_aln_v{intron}.sorted.bam.bai"
+    params:
+        qual = config["minimum_mapping_quality"]
+    threads: config["threads"]
+    conda: env_file
+    shell:"""
+    samtools view -h -bt {input.index} {input.sam} | seqkit bam -j {threads} -q {params.qual} -x -\
+    | samtools sort -@ {threads} -O BAM -o {output.bam} -;
+    echo \"BAM created: {output.bam}\"
+    samtools index {output.bam}
+    echo \"Index created: {output.bai}\"
+    """
+
 rule run_aling_stats:
     input:
         bam = "alignments/{specie}_{sample}_reads_aln_v{intron}.sorted.bam"
