@@ -309,7 +309,7 @@ rule run_operon_annotation:
     params:
         g_param = config["stringtie_g"],
         name = "{specie}_guide{ref}_v{intron}_gambat{threshold}",
-        script_operon_validation = SNAKEDIR +"/scripts/operon_validation.py"
+        snakedir = SNAKEDIR
     log: 
         logOPRN = "logs/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.sorted_OPRNvalidation.log",
         logSTRG = "logs/log_StrignTie_merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
@@ -324,7 +324,7 @@ rule run_operon_annotation:
     cat {output.operongtf} {output.opgenesgtf} > {params.name}.tmp.gtf ; \
     gffread --sort-alpha -F -T -o {output.merge} {params.name}.tmp.gtf ; rm {params.name}.tmp.gtf
 
-    python {params.script_operon_validation} -f {output.merge} --log {log.logOPRN}
+    python {params.snakedir}/scripts/operon_validation.py -f {output.merge} --log {log.logOPRN}
     grep 'StringTie	transcript' {output.opgenesgtfCLEAN} | wc -l ; ) 2&1> {log.logSTRG}
     """
 
@@ -410,11 +410,11 @@ rule run_longest_trans_filter:
     output:
         filtergtf = "annotations/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs_longest_trans_only.gtf"
     params:
-        script_long_trnas_filter = "{SNAKEDIR}/scripts/Longest_transcript_filter.py"
+        snakedir = SNAKEDIR
     conda: env_file
     log: "logs/log_long_trans_filter_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.log"
     shell:"""
-    (python {params.script_long_trnas_filter} {input.gtf}
+    (python {params.snakedir}/scripts/Longest_transcript_filter.py {input.gtf}
     touch {output.filtergtf} ) 2> {log}
     """
 
@@ -581,8 +581,7 @@ rule run_expression_matrix:
         result_dir = directory("Expression_matrix/{specie}"),
         samples = config["samples"],
         length = config["length"],
-        script_strintie_counts = SNAKEDIR + "/scripts/StringTie_counts.py",
-        script_prepDE = SNAKEDIR + "/scripts/prepDE.py3"
+        snakedir = SNAKEDIR
     conda: env_file
     log:
         log1 = "logs/run_expression_matrix_part1.{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log",
@@ -592,10 +591,10 @@ rule run_expression_matrix:
     # Create output directory for Stringtie counts
     mkdir -p "{params.result_dir}"
     
-    samplelist=$(python {params.script_strintie_counts} \
+    samplelist=$(python {params.snakedir}/scripts/StringTie_counts.py \
      -f {input.gtf} -b {input.bams} --outdir {params.result_dir} -t {threads}  --log {log.log1})
     
     # Create final matrix with all counts
     (echo "Create final matrix with all counts"
-    python {params.script_prepDE} -l {params.length} -i $samplelist -g {output.out_file_g} -t {output.out_file_t} ) 2&1> {log.log2}
+    python {params.snakedir}/scripts/prepDE.py3 -l {params.length} -i $samplelist -g {output.out_file_g} -t {output.out_file_t} ) 2&1> {log.log2}
     """
