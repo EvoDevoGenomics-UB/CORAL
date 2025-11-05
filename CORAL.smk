@@ -16,6 +16,7 @@ env_file = path.join(path.dirname(workflow.snakefile),"envs/CORAL-env.yml")
 env_file2 = path.join(path.dirname(workflow.snakefile),"envs/CORAL-env.merge.yml")
 
 in_genome = config["genome_fasta"]
+REF = config["reference_annot"]
 exeOpF = "./gamba-tool"
 
 def validate_samplesheet(samples_df):
@@ -47,12 +48,12 @@ def validate_samplesheet(samples_df):
 
 # Load and validate samples
 if "samplesheet" in config and config["samplesheet"]:
-    samples_df = pd.read_csv(config["samplesheet"], sep="\t", header=0)
-    SAMPLE_TO_FASTQS = validate_samplesheet(samples_df)
-    SAMPLES = list(SAMPLE_TO_FASTQS.keys())
+    samples_df = pd.read_csv(config["samplesheet"], sep="\t", header=None)
+    SAMPLE_TO_FASTQ = validate_samplesheet(samples_df)
+    SAMPLES = list(SAMPLE_TO_FASTQ.keys())
 else:
     SAMPLES = config["samples"]
-    SAMPLE_TO_FASTQS = {
+    SAMPLE_TO_FASTQ = {
         s: [os.path.join(config["data_dir"], f"{s}{config['data_sufix']}")]
         for s in SAMPLES
     }
@@ -74,7 +75,6 @@ rule_all_input_list=["versions.txt","operon-finder",
         expand("busco_analysis/BUSCO_results_all_summaries_{specie}_guide{ref}_v{intron}_gambat{threshold}", specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"])]
 
 if config["reference_annot"]:
-    REF = config["reference_annot"]
     rule_all_input_list.append(expand("busco_analysis/BUSCO_trans_{specie}_LRannot_REF", specie=config["specie"]))
     if config["run_gffcomapre"] == True :
         rule_all_input_list.append(expand("Gffcompare_results/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}",specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]))        
@@ -126,9 +126,8 @@ rule build_minimap_index:
     input:
         genome = in_genome
     output:
-        index = "index/{prefix}_genome_index.mmi"
+        index = "index/{specie}_genome_index.mmi"
     params:
-        prefix = config["specie"],
         opts = config["minimap_index_opts"]
     conda: env_file
     threads: config["threads"]
