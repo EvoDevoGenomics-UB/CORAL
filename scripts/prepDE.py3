@@ -62,13 +62,13 @@ if len(samples) == 0:
   print("Error: no GTF files found under base directory %s !" % (opts.input))
   sys.exit(1)
 
-RE_GENE_ID=re.compile('gene_id "([^"]+)"')
-RE_GENE_NAME=re.compile('gene_name "([^"]+)"')
-RE_TRANSCRIPT_ID=re.compile('transcript_id "([^"]+)"')
-RE_COVERAGE=re.compile('cov "([\-\+\d\.]+)"')
-RE_STRING=re.compile(re.escape(opts.string))
+RE_GENE_ID = re.compile(r'gene_id "([^"]+)"')
+RE_GENE_NAME = re.compile(r'gene_name "([^"]+)"')
+RE_TRANSCRIPT_ID = re.compile(r'transcript_id "([^"]+)"')
+RE_COVERAGE = re.compile(r'cov "([+\-.\d]+)"')
+RE_STRING = re.compile(re.escape(opts.string))
 
-RE_GFILE=re.compile('\-G\s*(\S+)') #assume filepath without spaces..
+RE_GFILE = re.compile(r'-G\s*(\S+)')  # assume filepath without spaces
 
 
 #####
@@ -271,7 +271,6 @@ for q, s in enumerate(samples):
 #        else:
         warnings.warn("No GTF file found in " + s[1])
 
-
 ##        transcriptList.sort(key=lambda bla: bla[1]) #gene_id
     
     for i,v in t_dict.items():
@@ -304,4 +303,3 @@ with open(opts.g, 'w') as csvfile:
         my_writer.writerow(geneDict[i])
 if opts.v:
    print("All done.")
-
