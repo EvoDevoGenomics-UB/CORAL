@@ -114,7 +114,7 @@ rule input_files_stats:
         file="logs/{specie}_{sample}_stats_input_reads.txt"
     conda: env_file
     shell:"""
-        ( seqkit stats {input.fastq} ) 2&1> {log.file}
+        ( seqkit stats {input.fastq} ) 2>&1 | tee {log.file}
     """
 
 ## Alignments of the reads by minimap2 & samtools
@@ -138,7 +138,7 @@ rule build_minimap_index:
     threads: config["threads"]
     shell:"""
         (minimap2 -t {threads} {params.opts} -I 1000G -d {output.index} {input.genome}
-        samtools faidx {input.genome}) 2&1> {log}
+        samtools faidx {input.genome}) 2>&1 | tee {log}
     """
 
 rule prepare_fastqs:
@@ -173,7 +173,7 @@ rule run_minimap2:
     log: "logs/{specie}_{sample}_v{intron}_minimap2_run.log"
     shell: """
     (minimap2 -t {threads} {params.opts} -G {params.max_intron} {input.index} {input.fastq} > {output.sam} ; \
-    head -2 {output.sam} ) 2&1> {log}
+    head -2 {output.sam} ) 2>&1 | tee {log}
     echo "Minimap2 alignment done: {output.sam} created"
     """
 
@@ -325,7 +325,7 @@ rule run_operon_annotation:
     gffread --sort-alpha -F -T -o {output.merge} {params.name}.tmp.gtf ; rm {params.name}.tmp.gtf
 
     python {params.snakedir}/scripts/operon_validation.py -f {output.merge} --log {log.logOPRN}
-    grep 'StringTie	transcript' {output.opgenesgtfCLEAN} | wc -l ; ) 2&1> {log.logSTRG}
+    grep 'StringTie	transcript' {output.opgenesgtfCLEAN} | wc -l ; ) 2>&1 | tee {log.logSTRG}
     """
 
 #Create gene final concensus annotations
@@ -348,7 +348,7 @@ rule run_gCLEAN_annotation:
      -l g -f {params.freq} {params.opts} -g {params.g_param} \
      -o {output.cleanfinal} ; \
     echo "  Final merge CLEAN done" ; \
-    grep 'StringTie	transcript' {output.cleanfinal} | wc -l ) 2&1> {log}
+    grep 'StringTie	transcript' {output.cleanfinal} | wc -l ) 2>&1 | tee {log}
     """
 
 #Create Merge final concensus annotations
@@ -379,7 +379,7 @@ rule run_final_annotation:
      -l g -f {params.freq} -F 0 -T 0 -c 0 -g {params.g_param} \
      -o {output.andOPRNs} ; \
     echo "  Final CLEAN-and-OPRNs done"
-    grep 'StringTie	transcript' {output.andOPRNs} | wc -l ) 2&1> {log}
+    grep 'StringTie	transcript' {output.andOPRNs} | wc -l ) 2>&1 | tee {log}
     """
 
 ##Extra things
@@ -549,7 +549,7 @@ rule run_gffcompare:
     conda: env_file
     log: "logs/log_gffcomapre_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
     shell:""" (
-    if [[ {input.ref} == "" ]] ; then
+    if [[ ! -f {input.ref} ]] ; then
         echo \"Error: No reference annotation provided.\" >&2
         exit 1
     else
@@ -593,8 +593,11 @@ rule run_expression_matrix:
     
     samplelist=$(python {params.snakedir}/scripts/StringTie_counts.py \
      -f {input.gtf} -b {input.bams} --outdir {params.result_dir} -t {threads}  --log {log.log1})
-    
+    echo $samplelist
+
     # Create final matrix with all counts
-    (echo "Create final matrix with all counts"
-    python {params.snakedir}/scripts/prepDE.py3 -l {params.length} -i $samplelist -g {output.out_file_g} -t {output.out_file_t} ) 2&1> {log.log2}
+    ( echo "Create final matrix with all counts"
+    python {params.snakedir}/scripts/prepDE.py3 -l "{params.length}" -i "$samplelist" -g {output.out_file_g} -t {output.out_file_t} 
+    [[ -f {output.out_file_t} ]] && echo "Expression matrix created succsesfully!"
+    ) 2>&1 | tee {log.log2}
     """
