@@ -17,7 +17,6 @@ env_file2 = path.join(path.dirname(workflow.snakefile),"envs/CORAL-env.merge.yml
 
 in_genome = config["genome_fasta"]
 REF = config["reference_annot"]
-#exeOpF = "./gamba-tool"
 
 def validate_samplesheet(samples_df):
     """Validate sample sheet and return dict of sample -> list of FASTQ paths."""
@@ -92,18 +91,18 @@ rule dump_versions:
     shell: "command -v conda > /dev/null && conda list > {log.ver}"
 
 rule build_GAMBA:
-    output: "gamba-tool"
+    output: "gamba"
     params:
         snakedir = SNAKEDIR,
         workdir = WORKDIR
     conda: env_file
-    log: "logs/build_GAMBA.log"
+    log: "logs/log_build_GAMBA.log"
     shell: """
-    cd {params.snakedir}/scripts/gamba-tool
+    (cd {params.snakedir}/scripts/gamba-tool
     cargo build --release
     cd {params.workdir}
     cp -r {params.snakedir}/scripts/gamba-tool/target/release/{output} {params.workdir}
-    {params.workdir}/{output} --help
+    {params.workdir}/{output} --help ) 2>&1 | tee {log}
     """
 
 ## Check input files
@@ -257,31 +256,31 @@ rule run_GAMBA_and_sanatizing:
         GAMBA = rules.build_GAMBA.output,
         gtf = rules.run_stringtie_sample_annotations.output.gtf
     output:
-        file = "GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_operons_found_t{threshold}.tsv",
-        gtfOPRNs = "GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_Operons_t{threshold}.clean.gtf",
-        gtfOpGs = "GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_OperonGenes_t{threshold}.clean.gtf",
-        gtfCLEAN = "GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_opCLEAN_t{threshold}.clean.gtf"
+        file = "GAMBA_results/{specie}_{sample}_guide{ref}_v{intron}_operons_found_t{threshold}.tsv",
+        gtfOPRNs = "GAMBA_results/{specie}_{sample}_guide{ref}_v{intron}_Operons_t{threshold}.clean.gtf",
+        gtfOpGs = "GAMBA_results/{specie}_{sample}_guide{ref}_v{intron}_OperonGenes_t{threshold}.clean.gtf",
+        gtfCLEAN = "GAMBA_results/{specie}_{sample}_guide{ref}_v{intron}_opCLEAN_t{threshold}.clean.gtf"
     params:
-        name = "GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}",
         threshold = config["operon_threshold"]
     conda: env_file
     log: "logs/{specie}_guide{ref}_{sample}_v{intron}_gambat{threshold}_GAMBA_run.log"
     threads: config["threads"]
     shell:"""
-    mkdir -p GAMBA_results
-    ./{input.GAMBA} -f {input.gtf} --threshold {params.threshold} -o {params.name} --log {log}
+    "sample_annotations/{specie}_{sample}_guide{ref}_v{intron}.gtf"
+    gtf_name=$(basename {input.gtf} ".gtf")
+    ./{input.GAMBA} -f {input.gtf} --threshold {params.threshold} -o "GAMBA_results" --log {log}
     
     awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
-    else print $0}}\' {params.name}_Operons_t{params.threshold}.gtf > {params.name}_Operons_t{params.threshold}.tmp ; \
-    gffread --sort-alpha -F -T -o {output.gtfOPRNs} {params.name}_Operons_t{params.threshold}.tmp
+    else print $0}}\' GAMBA_results/${gtf_name}_Operons_t{params.threshold}.gtf > ${gtf_name}_Operons_t{params.threshold}.tmp ; \
+    gffread --sort-alpha -F -T -o {output.gtfOPRNs} ${gtf_name}_Operons_t{params.threshold}.tmp
 
     awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
-    else print $0}}\' {params.name}_OperonGenes_t{params.threshold}.gtf > {params.name}_OperonGenes_t{params.threshold}.tmp ; \
-    gffread --sort-alpha -F -T -o {output.gtfOpGs} {params.name}_OperonGenes_t{params.threshold}.tmp
+    else print $0}}\' GAMBA_results/${gtf_name}_OperonGenes_t{params.threshold}.gtf > ${gtf_name}_OperonGenes_t{params.threshold}.tmp ; \
+    gffread --sort-alpha -F -T -o {output.gtfOpGs} ${gtf_name}_OperonGenes_t{params.threshold}.tmp
 
     awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
-    else print $0}}\' {params.name}_opCLEAN_t{params.threshold}.gtf > {params.name}_opCLEAN_t{params.threshold}.tmp ; \
-    gffread --sort-alpha -F -T -o {output.gtfCLEAN} {params.name}_opCLEAN_t{params.threshold}.tmp
+    else print $0}}\' GAMBA_results/${gtf_name}_opCLEAN_t{params.threshold}.gtf > ${gtf_name}_opCLEAN_t{params.threshold}.tmp ; \
+    gffread --sort-alpha -F -T -o {output.gtfCLEAN} ${gtf_name}_opCLEAN_t{params.threshold}.tmp
 
     rm {params.name}*{params.threshold}.tmp
     """
@@ -290,9 +289,9 @@ gtfsoperons_samples=[]
 gtfsopgenes_samples=[]
 gtfsclean_samples=[]
 for SAMPLE in config["samples"]:
-    gtfsoperons_samples.append("GAMBA_results/{{specie}}_guide{{ref}}_{}_v{{intron}}_Operons_t{{threshold}}.clean.gtf".format(SAMPLE))
-    gtfsopgenes_samples.append("GAMBA_results/{{specie}}_guide{{ref}}_{}_v{{intron}}_OperonGenes_t{{threshold}}.clean.gtf".format(SAMPLE))
-    gtfsclean_samples.append("GAMBA_results/{{specie}}_guide{{ref}}_{}_v{{intron}}_opCLEAN_t{{threshold}}.clean.gtf".format(SAMPLE))
+    gtfsoperons_samples.append("GAMBA_results/{{specie}}_{}_guide{{ref}}_v{{intron}}_Operons_t{{threshold}}.clean.gtf".format(SAMPLE))
+    gtfsopgenes_samples.append("GAMBA_results/{{specie}}_{}_guide{{ref}}_v{{intron}}_OperonGenes_t{{threshold}}.clean.gtf".format(SAMPLE))
+    gtfsclean_samples.append("GAMBA_results/{{specie}}_{}_guide{{ref}}_v{{intron}}_opCLEAN_t{{threshold}}.clean.gtf".format(SAMPLE))
 
 #Create oepron and operon-contained genes annotations
 rule run_operon_annotation:
