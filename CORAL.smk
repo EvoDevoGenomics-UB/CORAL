@@ -18,45 +18,6 @@ env_file2 = path.join(path.dirname(workflow.snakefile),"envs/CORAL-env.merge.yml
 in_genome = config["genome_fasta"]
 REF = config["reference_annot"]
 
-def validate_samplesheet(samples_df):
-    """Validate sample sheet and return dict of sample -> list of FASTQ paths."""
-    grouped = defaultdict(list)
-    seen_paths = defaultdict(list)
-    for _, row in samples_df.iterrows():
-        sample = str(row.iloc[0])
-        fq = str(row.iloc[1])
-        if not os.path.exists(fq):
-            print(f"ERROR: Missing FASTQ file for sample '{sample}': {fq}", file=sys.stderr)
-            sys.exit(1)
-        grouped[sample].append(fq)
-        seen_paths[fq].append(sample)
-    # Check for duplicates within a sample
-    for sample, fqs in grouped.items():
-        if len(fqs) != len(set(fqs)):
-            print(f"ERROR: Sample '{sample}' lists the same FASTQ file multiple times.", file=sys.stderr)
-            sys.exit(1)
-    # Check for FASTQs reused across samples
-    reused = {fq: s for fq, s in seen_paths.items() if len(set(s)) > 1}
-    if reused:
-        print("ERROR: Some FASTQ files are used by multiple samples:", file=sys.stderr)
-        for fq, s in reused.items():
-            print(f"  {fq}  ->  samples: {', '.join(set(s))}", file=sys.stderr)
-        sys.exit(1)
-    print(f"[INFO] Loaded {len(grouped)} samples, all FASTQ paths validated.")
-    return grouped
-
-# Load and validate samples
-if "samplesheet" in config and config["samplesheet"]:
-    samples_df = pd.read_csv(config["samplesheet"], sep="\t", header=None)
-    SAMPLE_TO_FASTQ = validate_samplesheet(samples_df)
-    SAMPLES = list(SAMPLE_TO_FASTQ.keys())
-else:
-    SAMPLES = config["samples"]
-    SAMPLE_TO_FASTQ = {
-        s: [os.path.join(config["data_dir"], f"{s}{config['data_sufix']}")]
-        for s in SAMPLES
-    }
-                
 include: "rules/common.smk"
 
 rule all:
