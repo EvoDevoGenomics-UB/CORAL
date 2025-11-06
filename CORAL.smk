@@ -18,10 +18,11 @@ env_file2 = path.join(path.dirname(workflow.snakefile),"envs/CORAL-env.merge.yml
 in_genome = config["genome_fasta"]
 REF = config["reference_annot"]
 
-include: "rules/common.smk"
-include: "rules/alignment.smk"
-include: "rules/sample-annot.smk"
-include: "rules/gamba.smk"
+include: "{SNAKEDIR}/rules/common.smk"
+include: "{SNAKEDIR}/rules/alignment.smk"
+include: "{SNAKEDIR}/rules/sample-annot.smk"
+include: "{SNAKEDIR}/rules/gamba.smk"
+include: "{SNAKEDIR}/rules/busco.smk"
 
 rule all:
     input:
@@ -107,113 +108,6 @@ rule do_busco_analyses:
         expand("busco_analysis/BUSCO_results_all_summaries_{specie}_guide{ref}_v{intron}_gambat{threshold}",
             specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"])
         
-rule run_longest_trans_filter:
-    input:
-        gtf = rules.run_final_annotation.output.noOPRNs
-    output:
-        filtergtf = "annotations/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs_longest_trans_only.gtf"
-    params:
-        snakedir = SNAKEDIR
-    conda: env_file
-    log: "logs/log_long_trans_filter_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.log"
-    shell:"""
-    (python {params.snakedir}/scripts/Longest_transcript_filter.py {input.gtf}
-    touch {output.filtergtf} ) 2> {log}
-    """
-
-rule run_obtaining_fasta:
-    input:
-        genome = in_genome ,
-        gtf = rules.run_longest_trans_filter.output.filtergtf ,
-        gtf_noOPRNs = rules.run_final_annotation.output.noOPRNs ,
-        gtf_andORPNs = rules.run_final_annotation.output.andOPRNs
-    output:
-        fasta = "busco_analysis/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs_longest_trans_only.fasta" ,
-        fasta_noOPRNs = "busco_analysis/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.fasta" ,
-        fasta_andOPRNs = "busco_analysis/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-and-OPRNs.fasta"
-    conda: env_file
-    log: "logs/log_obtaining_fasta_GTFs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
-    shell:"""
-    (mkdir -p busco_analysis
-    gffread -g {input.genome} -w {output.fasta} {input.gtf}
-    gffread -g {input.genome} -w {output.fasta_noOPRNs} {input.gtf_noOPRNs}
-    gffread -g {input.genome} -w {output.fasta_andOPRNs} {input.gtf_andORPNs} ) 2> {log}
-    """
-rule busco_download_lineage:
-    output:
-        lin_dir = directory(path.join(WORKDIR, "busco_downloads/lineages/", config["lineages"]))
-    params:
-        lineage = config["lineages"]
-    conda: env_file
-    log: "logs/log_busco_download_lineage.log"
-    shell:"""
-        (busco --download {params.lineage} --download_path {output.lin_dir} ) 2> {log}
-    """
-rule run_busco_analyses:
-    input:
-        lin_dir = rules.busco_download_lineage.output.lin_dir ,
-        fa_longtrans = rules.run_obtaining_fasta.output.fasta ,
-        fa_noOPRNs = rules.run_obtaining_fasta.output.fasta_noOPRNs ,
-        fa_andOPRNs = rules.run_obtaining_fasta.output.fasta_andOPRNs
-    output:
-        out_longtrans = directory("busco_analysis/BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNs_longest_trans_only"),
-        out_noOPRNs = directory("busco_analysis/BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNs"),
-        out_andOPRNs = directory("busco_analysis/BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_andOPRNs")
-    params:
-        lineage = config["lineages"]
-    conda: env_file
-    log: "logs/log_BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
-    shell:""" (
-        busco -i {input.fa_longtrans} -l {input.lin_dir} -o {output.out_longtrans} -m transcriptome
-        busco -i {input.fa_noOPRNs} -l {input.lin_dir} -o {output.out_noOPRNs} -m transcriptome
-        busco -i {input.fa_andOPRNs} -l {input.lin_dir} -o {output.out_andOPRNs} -m transcriptome ) 2> {log}
-    """
-
-rule run_busco_reference_annot:
-    input:
-        lin_dir = rules.busco_download_lineage.output.lin_dir ,
-        genome = in_genome ,
-        ref_annot = REF
-    output:
-        fasta = "busco_analysis/{specie}_LRannot_REF.fasta" ,
-        out_ref = directory("busco_analysis/BUSCO_trans_{specie}_LRannot_REF")
-    params:
-        lineage = config["lineages"]
-    conda: env_file
-    log: "logs/log_busco_reference_annot_{specie}.log"
-    shell:""" (
-        mkdir -p busco_analysis
-        gffread -g {input.genome} -w {output.fasta} {input.ref_annot}
-        busco -i {output.fasta} -l {input.lin_dir} -o {output.out_ref} -m transcriptome ) 2> {log}
-    """
-
-busco_ref_input=[]
-if config["reference_annot"] not in (None, [], ""):
-    busco_ref_input.append("busco_analysis/BUSCO_trans_{specie}_LRannot_REF")
-
-rule busco_plot:
-    input:
-        out_longtrans = "busco_analysis/BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNs_longest_trans_only",
-        out_noOPRNs = "busco_analysis/BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNs",
-        out_andOPRNs = "busco_analysis/BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_andOPRNs",
-        out_ref = busco_ref_input
-    output:
-        out_dir = directory("busco_analysis/BUSCO_results_all_summaries_{specie}_guide{ref}_v{intron}_gambat{threshold}")
-    params:
-        workdir = WORKDIR,
-        snakedir = SNAKEDIR
-    conda: env_file
-    log: "logs/log_busco_polt_BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
-    shell:""" (
-        mkdir -p {output.out_dir}
-        cp {params.workdir}{input.out_longtrans}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.noOPRNs_longtrans.txt
-        cp {params.workdir}{input.out_noOPRNs}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.noOPRNs.txt
-        cp {params.workdir}{input.out_andOPRNs}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.andOPRNs.txt
-        if [ -n "{params.workdir}{input.out_ref}" ]; then
-            cp {params.workdir}{input.out_ref}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.REF.txt
-        fi
-        python3 {params.snakedir}/scripts/generate_plot.py -wd {output.out_dir} ) 2> {log}
-    """
 
 # Obtaining coverage of final annotation
 rule run_recover_coverage:
