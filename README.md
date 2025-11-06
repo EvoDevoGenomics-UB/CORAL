@@ -29,6 +29,39 @@ To run **CORAL** you just need to modify the 'CORAL-config.yaml' with your param
 
     snakemake --use-conda --snakefile CORAL.smk --configfile CORAL-config.yaml --cores 4
 
+## Indicating the FASTQ files to use in the Config file
+There are two ways to indicate to CORAL where to find your long-read FASTQ files:
+1. By using a samplesheet file
+
+   Edit the <code>samplesheet</code> parameter to point into a **TSV** file:
+   
+       samplesheet: "/absolute/path/to/TSV_file.tsv"
+
+   The TSV file should contain the '_sample names_' and their '_absolute paths_' separated by _tab_ (<code>\t</code>). It should look like this:
+
+       Sample1    /absolute/path/to/your/sample1.fq
+       Sample2    /absolute/path/to/your/sample2.part1.fastq
+       Sample2    /absolute/path/to/yout/sample2.part2.fastq
+
+   **NOTE**: This format can accept multiple FASTQ files for a single '_sample name_', and diffrent FASTQ sufixes (<code>.fq</code> or <code>.fastq</code>)
+  
+2. Using directory and naming  parameters
+  
+   Edit the parameters <code>data_dir</code>, <code>samples</code>, and <code>data_sufix</code>. Example:
+
+       data_dir: "/absolute/path/to/the/data/files/"
+       samples: ["Sample1","Sample2","Sample3"]
+       data_sufix: "_chip-runXXXXX.fastq"
+
+   In this example, CORAL will use as '_sample name_' the ones provided in samples ("Sample1", "Sample2", and "Sample3"), and will interpret that the FASTQ files to use are:
+   
+       /absolute/path/to/the/data/files/Sample1_chip-runXXXXX.fastq
+       /absolute/path/to/the/data/files/Sample2_chip-runXXXXX.fastq
+       /absolute/path/to/the/data/files/Sample3_chip-runXXXXX.fastq
+
+   This method is useful when the sample files have **highly similar names**, with just diffrent IDs, and a **single FASTQ file** to process.
+   In this case all sample files must share the **same FASTQ sufix** (either <code>.fq</code> or <code>.fastq</code>).
+
 ## Output files
 
 The CORAL pipeline creates several folders including:
