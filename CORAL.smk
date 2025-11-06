@@ -266,21 +266,22 @@ rule run_GAMBA_and_sanatizing:
     log: "logs/{specie}_guide{ref}_{sample}_v{intron}_gambat{threshold}_GAMBA_run.log"
     threads: config["threads"]
     shell:"""
-    "sample_annotations/{specie}_{sample}_guide{ref}_v{intron}.gtf"
     gtf_name=$(basename {input.gtf} ".gtf")
+    echo "GTF file: $gtf_name"
+
     ./{input.GAMBA} -f {input.gtf} --threshold {params.threshold} -o "GAMBA_results" --log {log}
     
     awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
-    else print $0}}\' GAMBA_results/${gtf_name}_Operons_t{params.threshold}.gtf > ${gtf_name}_Operons_t{params.threshold}.tmp ; \
-    gffread --sort-alpha -F -T -o {output.gtfOPRNs} ${gtf_name}_Operons_t{params.threshold}.tmp
+    else print $0}}\' GAMBA_results/${{gtf_name}}_Operons_t{params.threshold}.gtf > ${{gtf_name}}_Operons_t{params.threshold}.tmp ; \
+    gffread --sort-alpha -F -T -o {output.gtfOPRNs} ${{gtf_name}}_Operons_t{params.threshold}.tmp
 
     awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
-    else print $0}}\' GAMBA_results/${gtf_name}_OperonGenes_t{params.threshold}.gtf > ${gtf_name}_OperonGenes_t{params.threshold}.tmp ; \
-    gffread --sort-alpha -F -T -o {output.gtfOpGs} ${gtf_name}_OperonGenes_t{params.threshold}.tmp
+    else print $0}}\' GAMBA_results/${{gtf_name}}_OperonGenes_t{params.threshold}.gtf > ${{gtf_name}}_OperonGenes_t{params.threshold}.tmp ; \
+    gffread --sort-alpha -F -T -o {output.gtfOpGs} ${{gtf_name}}_OperonGenes_t{params.threshold}.tmp
 
     awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
-    else print $0}}\' GAMBA_results/${gtf_name}_opCLEAN_t{params.threshold}.gtf > ${gtf_name}_opCLEAN_t{params.threshold}.tmp ; \
-    gffread --sort-alpha -F -T -o {output.gtfCLEAN} ${gtf_name}_opCLEAN_t{params.threshold}.tmp
+    else print $0}}\' GAMBA_results/${{gtf_name}}_opCLEAN_t{params.threshold}.gtf > ${{gtf_name}}_opCLEAN_t{params.threshold}.tmp ; \
+    gffread --sort-alpha -F -T -o {output.gtfCLEAN} ${{gtf_name}}_opCLEAN_t{params.threshold}.tmp
 
     rm {params.name}*{params.threshold}.tmp
     """
