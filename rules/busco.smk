@@ -101,7 +101,7 @@ rule busco_plot:
         cp {params.workdir}{input.out_longtrans}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.noOPRNs_longtrans.txt
         cp {params.workdir}{input.out_noOPRNs}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.noOPRNs.txt
         cp {params.workdir}{input.out_andOPRNs}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.andOPRNs.txt
-        if [ -n "{params.workdir}{input.out_ref}" ]; then
+        if [ {input.out_ref} != "" ]; then
             cp {params.workdir}{input.out_ref}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.REF.txt
         fi
         python3 {params.snakedir}/scripts/generate_plot.py -wd {output.out_dir} ) 2> {log}
