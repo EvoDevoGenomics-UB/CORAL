@@ -5,7 +5,7 @@
 The CORAL protocol is a snakemake workflow design to <b>annotate compact genomes</b> using <b>long-read RNAseq data</b>.
 
 It uses as **input** clean (primer-trimmed) pre-processed FASTQ files, mapping them to the provided genome using _Minimap2_.
-Then, it creates non-assembled annotations for each FASTQ file using <i>StringTie v3.0.2</i> and identifies potential operons within those annotations (implementing <i>GAMBA v1.4.1</i>).
+Then, it creates non-assembled annotations for each FASTQ file using <i>StringTie v3.0.2</i> and identifies potential operons within those annotations (implementing <i>GAMBA v2.0</i>).
 
 After identifying operon transcripts, operon-contained transcripts, and non-operon-related transcripts, CORAL generates consensus annotations for each of the three sets. These sets are then merged (using <i>StringTie v3.0.1</i>) to generate two final consensus annotations:
 * '**Merge clean_andOPRNs GTF**': contains all three transcripts sets
