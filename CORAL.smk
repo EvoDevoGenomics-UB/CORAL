@@ -24,6 +24,7 @@ include: "{SNAKEDIR}/rules/sample-annot.smk"
 include: "{SNAKEDIR}/rules/gamba.smk"
 include: "{SNAKEDIR}/rules/busco.smk"
 include: "{SNAKEDIR}/rules/gffcmp.smk"
+include: "{SNAKEDIR}/rules/exp-matrix.smk"
 
 rule all:
     input:
@@ -127,32 +128,15 @@ rule run_recover_coverage:
     stringtie -G {input.gtf} -e -o {output.gtfFinal} {input.bams} ) 2> {log}
     """
 
+#### OPTIONAL steps
+## Comparing new annotations againts reference one
+rule do_gffcompare:
+    input:
+        expand("Gffcompare_results/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}",
+            specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"])
 
 ## Expression matrix creation
-rule run_expression_matrix:
+rule do_expression_matrix:
     input:
         gtf = rules.run_final_annotation.output.andOPRNs ,
         bams = expand("alignments/{{specie}}_{sample}_reads_aln_v{{intron}}.sorted.bam", sample=SAMPLES)
-    output:
-        out_file_g = "Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-and-OPRNs/gene_count_matrix.csv",
-        out_file_t = "Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-and-OPRNs/transcript_count_matrix.csv"
-    params:
-        result_dir = directory("Expression_matrix/{specie}"),
-        samples = config["samples"],
-        length = config["length"],
-        snakedir = SNAKEDIR
-    conda: env_file
-    log:
-        log1 = "logs/run_expression_matrix_part1.{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log",
-        log2 = "logs/run_expression_matrix_part2.{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
-    threads: config["threads"]
-    shell:"""
-    mkdir -p "{params.result_dir}"
-    
-    samplelist=$(python {params.snakedir}/scripts/StringTie_counts.py \
-     -f {input.gtf} -b {input.bams} --outdir {params.result_dir} -t {threads}  --log {log.log1})
-
-    ( echo "Create final matrix with all counts"
-    python {params.snakedir}/scripts/prepDE.py3 -l "{params.length}" -i "$samplelist" -g {output.out_file_g} -t {output.out_file_t} 
-    [[ -f {output.out_file_t} ]] && echo "Expression matrix created succsesfully!" ) 2>&1 | tee {log.log2}
-    """
