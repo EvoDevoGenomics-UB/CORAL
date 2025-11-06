@@ -110,24 +110,6 @@ rule do_busco_analyses:
         expand("busco_analysis/BUSCO_results_all_summaries_{specie}_guide{ref}_v{intron}_gambat{threshold}",
             specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"])
         
-
-# Obtaining coverage of final annotation
-rule run_recover_coverage:
-    input:
-        gtf = rules.run_final_annotation.output.andOPRNs ,
-        gtf2 = rules.run_final_annotation.output.noOPRNs ,
-        bams = expand("alignments/{specie}_{sample}_reads_aln_v{intron}.sorted.bam", 
-            specie=config["specie"], sample=SAMPLES, intron=config["minimap2_max_intron"])
-    output:
-        gtfFinal = "annotations/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-and-OPRNs.counts.gtf",
-        gtfFinal2 = "annotations/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.counts.gtf"
-    conda: env_file
-    log: "logs/log_recover_coverage_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
-    shell: """ (
-    stringtie -G {input.gtf2} -e -o {output.gtfFinal2} {input.bams}
-    stringtie -G {input.gtf} -e -o {output.gtfFinal} {input.bams} ) 2> {log}
-    """
-
 #### OPTIONAL steps
 ## Comparing new annotations againts reference one
 rule do_gffcompare:
