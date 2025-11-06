@@ -8,8 +8,8 @@ It uses as **input** clean (primer-trimmed) pre-processed FASTQ files, mapping t
 Then, it creates non-assembled annotations for each FASTQ file using <i>StringTie v3.0.2</i> and identifies potential operons within those annotations (implementing <i>GAMBA v2.0</i>).
 
 After identifying operon transcripts, operon-contained transcripts, and non-operon-related transcripts, CORAL generates consensus annotations for each of the three sets. These sets are then merged (using <i>StringTie v3.0.1</i>) to generate two final consensus annotations:
-* '**Merge clean_andOPRNs GTF**': contains all three transcripts sets
-* '**Merge clean_noOPRNs GTF**': includes only operon-contained transcripts and non-operon-related transcripts.
+* **Merge clean_andOPRNs GTF**: contains all three transcripts sets
+* **Merge clean_noOPRNs GTF**: includes only operon-contained transcripts and non-operon-related transcripts.
 
 The quality of the annotation is assayed with <i>BUSCO (v5.8)</i>, and optionally with _Gffcompare_ when a reference annotation is provided. Finally, CORAL can generate an expression matrix for the consensus annotation including all the transcript sets (Merge clean_andOPRNs GTF), when specified in the configuration file.
 
