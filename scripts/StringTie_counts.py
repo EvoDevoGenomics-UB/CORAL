@@ -4,6 +4,7 @@ import sys
 import os
 import logging
 import argparse
+from pathlib import Path
 
 # Argument parser setup
 parser = argparse.ArgumentParser(
@@ -30,10 +31,10 @@ parser.add_argument(
     default=2,
     help="Number of threads to use [default: 2]"
 )
-#parser.add_argument(
-#    "--log",
-#    help="Log file [default: GTF basename + strigntie_counts.log]."
-#)
+parser.add_argument(
+    "--log",
+    help="Log file [default: GTF basename + strigntie_counts.log]."
+)
 
 # Parse arguments
 args = parser.parse_args()
@@ -43,9 +44,10 @@ threads = args.threads
 
 # If no output was specified, use the input base name
 if args.outdir:
-    outdir = args.outdir / os.path.splitext(os.path.basename(gtf_file))[0]
+    outdir = args.outdir +"/"+ os.path.splitext(os.path.basename(gtf_file))[0]
 else:
     outdir = os.path.splitext(os.path.basename(gtf_file))[0]
+
 #Set log output file
 if args.log:
     log_file = args.log
@@ -66,17 +68,20 @@ if not os.path.isfile(gtf_file):
 logging.info(f"Using GTF: {gtf_file}")
 logging.info(f"Output directory: {outdir}")
 
+outdir = Path(outdir)
 outdir.mkdir(parents=True, exist_ok=True)
 list_path = outdir / "ALL_sample_list.txt"
 
 with open(list_path, "w") as f_list:
     for bam in args.bam:
         bam_name = os.path.splitext(os.path.basename(bam))[0]
-        logging.info(f"Processing: {bam}.bam")
-        sample = bam_name.stem.split("_reads_aln_")[0]
-        sample_dir = outdir / sample
+        logging.info(f"Processing: {bam_name}.bam")
+        sample = bam_name.split("_reads_aln_")[0]
+        sample_dir = str(outdir) +"/"+ sample
+        sample_dir = Path(sample_dir)
         sample_dir.mkdir(exist_ok=True)
-        out_gtf = sample_dir / f"{sample}.gtf"
+        out_gtf = str(sample_dir) +"/"+ f"{sample}.gtf"
+        out_gtf = Path(out_gtf)
 
         if not out_gtf.exists():
             logging.info(f"Running stringtie for sample {sample}")
