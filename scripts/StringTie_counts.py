@@ -77,7 +77,6 @@ with open(list_path, "w") as f_list:
         bam_name = os.path.splitext(os.path.basename(bam))[0]
         logging.info(f"Processing: {bam_name}.bam")
         sample = bam_name.split("_reads_aln_")[0]
-        print(sample)
         sample_dir = str(outdir) +"/"+ sample
         sample_dir = Path(sample_dir)
         sample_dir.mkdir(exist_ok=True)
