@@ -17,7 +17,6 @@ env_file2 = path.join(path.dirname(workflow.snakefile),"envs/CORAL-env.merge.yml
 
 in_genome = config["genome_fasta"]
 REF = config["reference_annot"]
-#exeOpF = "./gamba-tool"
 
 def validate_samplesheet(samples_df):
     """Validate sample sheet and return dict of sample -> list of FASTQ paths."""
@@ -87,23 +86,23 @@ rule all:
         rule_all_input_list
 
 rule dump_versions:
-    log: ver = "versions.txt"
+    log: "logs/versions.txt"
     conda: env_file
-    shell: "command -v conda > /dev/null && conda list > {log.ver}"
+    shell: "command -v conda > /dev/null && conda list > {log}"
 
 rule build_GAMBA:
-    output: "gamba-tool"
+    output: "gamba"
     params:
         snakedir = SNAKEDIR,
         workdir = WORKDIR
     conda: env_file
-    log: "logs/build_GAMBA.log"
+    log: "logs/log_build_GAMBA.log"
     shell: """
-    cd {params.snakedir}/scripts/gamba-tool
+    (cd {params.snakedir}/scripts/gamba-tool
     cargo build --release
     cd {params.workdir}
     cp -r {params.snakedir}/scripts/gamba-tool/target/release/{output} {params.workdir}
-    {params.workdir}/{output} --help
+    {params.workdir}/{output} --help ) 2>&1 | tee {log}
     """
 
 ## Check input files
@@ -120,7 +119,7 @@ rule input_files_stats:
 ## Alignments of the reads by minimap2 & samtools
 rule do_alignment:
     input:
-        expand("index/{prefix}_genome_index.mmi", prefix=config["specie"]),
+        expand("index/{specie}_genome_index.mmi", specie=config["specie"]),
         expand("alignments/{specie}_{sample}_reads_aln_v{intron}.sorted.bam",
             specie=config["specie"], sample=SAMPLES, intron=config["minimap2_max_intron"]),
         expand("alignments/{specie}_{sample}_reads_aln_sorted_v{intron}.stats.txt", 
@@ -209,7 +208,7 @@ rule run_aling_stats:
     (samtools stats -@ {threads} {input.bam} > {output.stats} ) 2> {log}
     """
 
-#Stringite v3.0
+# Stringite v3.0
 rule do_stringtie_sample_annotations:
     input:
         expand("sample_annotations/{specie}_{sample}_guide{ref}_v{intron}.gtf", 
@@ -242,7 +241,7 @@ rule run_stringtie_sample_annotations:
         fi ) 2> {log}
         """
 
-##Find and annotate operons and contained genes
+## Find and annotate operons and contained genes
 rule do_operon_annotations:
     input:
         expand("GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_operons_found_t{threshold}.tsv", specie=config["specie"], sample=SAMPLES, ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
@@ -251,37 +250,37 @@ rule do_operon_annotations:
         expand("GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_opCLEAN_t{threshold}.clean.gtf", specie=config["specie"], sample=SAMPLES, ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("annotations/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.sorted.gtf", specie=config["specie"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"])
 
-#Rust script GAMBA
+#Rust tool GAMBA
 rule run_GAMBA_and_sanatizing:
     input:
         GAMBA = rules.build_GAMBA.output,
         gtf = rules.run_stringtie_sample_annotations.output.gtf
     output:
-        file = "GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_operons_found_t{threshold}.tsv",
-        gtfOPRNs = "GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_Operons_t{threshold}.clean.gtf",
-        gtfOpGs = "GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_OperonGenes_t{threshold}.clean.gtf",
-        gtfCLEAN = "GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_opCLEAN_t{threshold}.clean.gtf"
+        file = "GAMBA_results/{specie}_{sample}_guide{ref}_v{intron}_operons_found_t{threshold}.tsv",
+        gtfOPRNs = "GAMBA_results/{specie}_{sample}_guide{ref}_v{intron}_Operons_t{threshold}.clean.gtf",
+        gtfOpGs = "GAMBA_results/{specie}_{sample}_guide{ref}_v{intron}_OperonGenes_t{threshold}.clean.gtf",
+        gtfCLEAN = "GAMBA_results/{specie}_{sample}_guide{ref}_v{intron}_opCLEAN_t{threshold}.clean.gtf"
     params:
-        name = "GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}",
         threshold = config["operon_threshold"]
     conda: env_file
     log: "logs/{specie}_guide{ref}_{sample}_v{intron}_gambat{threshold}_GAMBA_run.log"
     threads: config["threads"]
     shell:"""
-    mkdir -p GAMBA_results
-    ./{input.GAMBA} -f {input.gtf} --threshold {params.threshold} -o {params.name} --log {log}
+    "sample_annotations/{specie}_{sample}_guide{ref}_v{intron}.gtf"
+    gtf_name=$(basename {input.gtf} ".gtf")
+    ./{input.GAMBA} -f {input.gtf} --threshold {params.threshold} -o "GAMBA_results" --log {log}
     
     awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
-    else print $0}}\' {params.name}_Operons_t{params.threshold}.gtf > {params.name}_Operons_t{params.threshold}.tmp ; \
-    gffread --sort-alpha -F -T -o {output.gtfOPRNs} {params.name}_Operons_t{params.threshold}.tmp
+    else print $0}}\' GAMBA_results/${gtf_name}_Operons_t{params.threshold}.gtf > ${gtf_name}_Operons_t{params.threshold}.tmp ; \
+    gffread --sort-alpha -F -T -o {output.gtfOPRNs} ${gtf_name}_Operons_t{params.threshold}.tmp
 
     awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
-    else print $0}}\' {params.name}_OperonGenes_t{params.threshold}.gtf > {params.name}_OperonGenes_t{params.threshold}.tmp ; \
-    gffread --sort-alpha -F -T -o {output.gtfOpGs} {params.name}_OperonGenes_t{params.threshold}.tmp
+    else print $0}}\' GAMBA_results/${gtf_name}_OperonGenes_t{params.threshold}.gtf > ${gtf_name}_OperonGenes_t{params.threshold}.tmp ; \
+    gffread --sort-alpha -F -T -o {output.gtfOpGs} ${gtf_name}_OperonGenes_t{params.threshold}.tmp
 
     awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
-    else print $0}}\' {params.name}_opCLEAN_t{params.threshold}.gtf > {params.name}_opCLEAN_t{params.threshold}.tmp ; \
-    gffread --sort-alpha -F -T -o {output.gtfCLEAN} {params.name}_opCLEAN_t{params.threshold}.tmp
+    else print $0}}\' GAMBA_results/${gtf_name}_opCLEAN_t{params.threshold}.gtf > ${gtf_name}_opCLEAN_t{params.threshold}.tmp ; \
+    gffread --sort-alpha -F -T -o {output.gtfCLEAN} ${gtf_name}_opCLEAN_t{params.threshold}.tmp
 
     rm {params.name}*{params.threshold}.tmp
     """
@@ -290,9 +289,9 @@ gtfsoperons_samples=[]
 gtfsopgenes_samples=[]
 gtfsclean_samples=[]
 for SAMPLE in config["samples"]:
-    gtfsoperons_samples.append("GAMBA_results/{{specie}}_guide{{ref}}_{}_v{{intron}}_Operons_t{{threshold}}.clean.gtf".format(SAMPLE))
-    gtfsopgenes_samples.append("GAMBA_results/{{specie}}_guide{{ref}}_{}_v{{intron}}_OperonGenes_t{{threshold}}.clean.gtf".format(SAMPLE))
-    gtfsclean_samples.append("GAMBA_results/{{specie}}_guide{{ref}}_{}_v{{intron}}_opCLEAN_t{{threshold}}.clean.gtf".format(SAMPLE))
+    gtfsoperons_samples.append("GAMBA_results/{{specie}}_{}_guide{{ref}}_v{{intron}}_Operons_t{{threshold}}.clean.gtf".format(SAMPLE))
+    gtfsopgenes_samples.append("GAMBA_results/{{specie}}_{}_guide{{ref}}_v{{intron}}_OperonGenes_t{{threshold}}.clean.gtf".format(SAMPLE))
+    gtfsclean_samples.append("GAMBA_results/{{specie}}_{}_guide{{ref}}_v{{intron}}_opCLEAN_t{{threshold}}.clean.gtf".format(SAMPLE))
 
 #Create oepron and operon-contained genes annotations
 rule run_operon_annotation:
@@ -328,7 +327,7 @@ rule run_operon_annotation:
     grep 'StringTie	transcript' {output.opgenesgtfCLEAN} | wc -l ; ) 2>&1 | tee {log.logSTRG}
     """
 
-#Create gene final concensus annotations
+# Create gene final concensus annotations
 rule run_gCLEAN_annotation:
     input:
         gtfsclean = gtfsclean_samples
@@ -351,7 +350,7 @@ rule run_gCLEAN_annotation:
     grep 'StringTie	transcript' {output.cleanfinal} | wc -l ) 2>&1 | tee {log}
     """
 
-#Create Merge final concensus annotations
+# Create Merge final concensus annotations
 rule run_final_annotation:
     input:
         cleanfinal = rules.run_gCLEAN_annotation.output.cleanfinal ,
@@ -382,7 +381,7 @@ rule run_final_annotation:
     grep 'StringTie	transcript' {output.andOPRNs} | wc -l ) 2>&1 | tee {log}
     """
 
-##Extra things
+## BUSCO-related rules
 rule do_busco_analyses:
     input:
         expand("annotations/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs_longest_trans_only.gtf",
@@ -512,8 +511,7 @@ rule busco_plot:
         python3 {params.snakedir}/scripts/generate_plot.py -wd {output.out_dir} ) 2> {log}
     """
 
-####FINAL steps
-#Obtaining coverage of final annotation
+# Obtaining coverage of final annotation
 rule run_recover_coverage:
     input:
         gtf = rules.run_final_annotation.output.andOPRNs ,
@@ -530,7 +528,8 @@ rule run_recover_coverage:
     stringtie -G {input.gtf} -e -o {output.gtfFinal} {input.bams} ) 2> {log}
     """
 
-##Comparing new annoatation againts reference one
+#### OPTIONAL steps
+## Comparing new annotations againts reference one
 rule do_gffcompare:
     input:
         expand("Gffcompare_results/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}",
@@ -566,10 +565,10 @@ rule run_gffcompare:
             done) > $i.gffcmp_trans_types.txt
             echo "File '$i.gffcmp_trans_types.txt' created."
         done
-    fi ) 2> {log}
+    fi ) 2>&1 | tee {log}
     """
 
-###For expression matrix creation:
+## Expression matrix creation
 rule run_expression_matrix:
     input:
         gtf = rules.run_final_annotation.output.andOPRNs ,
@@ -588,16 +587,12 @@ rule run_expression_matrix:
         log2 = "logs/run_expression_matrix_part2.{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
     threads: config["threads"]
     shell:"""
-    # Create output directory for Stringtie counts
     mkdir -p "{params.result_dir}"
     
     samplelist=$(python {params.snakedir}/scripts/StringTie_counts.py \
      -f {input.gtf} -b {input.bams} --outdir {params.result_dir} -t {threads}  --log {log.log1})
-    echo $samplelist
 
-    # Create final matrix with all counts
     ( echo "Create final matrix with all counts"
     python {params.snakedir}/scripts/prepDE.py3 -l "{params.length}" -i "$samplelist" -g {output.out_file_g} -t {output.out_file_t} 
-    [[ -f {output.out_file_t} ]] && echo "Expression matrix created succsesfully!"
-    ) 2>&1 | tee {log.log2}
+    [[ -f {output.out_file_t} ]] && echo "Expression matrix created succsesfully!" ) 2>&1 | tee {log.log2}
     """
