@@ -1,11 +1,4 @@
 ## Alignments of the reads by minimap2 & samtools
-rule do_alignment:
-    input:
-        expand("index/{specie}_genome_index.mmi", specie=config["specie"]),
-        expand("alignments/{specie}_{sample}_reads_aln_v{intron}.sorted.bam",
-            specie=config["specie"], sample=SAMPLES, intron=config["minimap2_max_intron"]),
-        expand("alignments/{specie}_{sample}_reads_aln_sorted_v{intron}.stats.txt", 
-            specie=config["specie"], sample=SAMPLES, intron=config["minimap2_max_intron"])
 
 rule build_minimap_index:
     input:
