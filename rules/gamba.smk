@@ -1,7 +1,22 @@
 #Rust tool GAMBA
+rule build_GAMBA:
+    output: "gamba"
+    params:
+        snakedir = SNAKEDIR,
+        workdir = WORKDIR
+    conda: env_file
+    log: "logs/log_build_GAMBA.log"
+    shell: """
+    (cd {params.snakedir}/scripts/gamba-tool
+    cargo build --release
+    cd {params.workdir}
+    cp -r {params.snakedir}/scripts/gamba-tool/target/release/{output} {params.workdir}
+    {params.workdir}/{output} --help ) 2>&1 | tee {log}
+    """
+
 rule run_GAMBA_and_sanatizing:
     input:
-        GAMBA = "gamba",
+        GAMBA = rules.build_GAMBA.output,
         gtf = rules.run_stringtie_sample_annotations.output.gtf
     output:
         file = "GAMBA_results/{specie}_{sample}_guide{ref}_v{intron}_operons_found_t{threshold}.tsv",
