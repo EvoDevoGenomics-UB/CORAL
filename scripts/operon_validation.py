@@ -99,8 +99,36 @@ for chrom, transcripts in chrom_transcripts.items():
                     opg_gene_id = sub_transcript.attributes['gene_id'][0]
                     if transcript.id == sub_transcript.id or operon_gene_id == opg_gene_id:
                         continue # Skip when comparing itself
-                    if (transcript.start <= (sub_transcript.start + 250 ) < (transcript.end+250)) and (transcript.end >= (sub_transcript.end - 250) > (transcript.start-250)):
-                        contained_pairs.append((transcript.chrom, transcript.strand, transcript.id, operon_gene_id, sub_transcript.id, opg_gene_id))
+                    # Check if coordinates suggest containment
+                    if (transcript.start <= (sub_transcript.start + 250) < (transcript.end + 250)) and \
+                    (transcript.end >= (sub_transcript.end - 250) > (transcript.start - 250)):
+
+                        # Now check exon overlap — make sure the sub_transcript overlaps at least one operon exon
+                        operon_exons = list(db.children(transcript, featuretype='exon', order_by='start'))
+                        sub_exons = list(db.children(sub_transcript, featuretype='exon', order_by='start'))
+
+                        overlap_found = False
+                        for op_exon in operon_exons:
+                            for sub_exon in sub_exons:
+                                # Allow small tolerance (±250 bp)
+                                if (op_exon.start <= (sub_exon.start + 250) < (op_exon.end + 250)) and \
+                                    (op_exon.end >= (sub_exon.end - 250) > (op_exon.start - 250)):
+                                #if (op_exon.start - 250 <= sub_exon.end) and (sub_exon.start <= op_exon.end + 250):
+                                    overlap_found = True
+                                    break
+                            if overlap_found:
+                                break
+
+                        # Only keep this pair if there's true exon overlap
+                        if overlap_found:
+                            contained_pairs.append(
+                                (transcript.chrom, transcript.strand, transcript.id, operon_gene_id, sub_transcript.id, opg_gene_id)
+                            )
+                        else:
+                            logging.warning(
+                                f"Excluded {sub_transcript.id} (gene {opg_gene_id}) inside {transcript.id} "
+                                f"because it lies entirely within an intron (no exon overlap)."
+                            )
 
 ######
 # Group operon/transcripts by chr and strand
