@@ -35,21 +35,6 @@ rule dump_versions:
     conda: env_file
     shell: "command -v conda > /dev/null && conda list > {log}"
 
-rule build_GAMBA:
-    output: "gamba"
-    params:
-        snakedir = SNAKEDIR,
-        workdir = WORKDIR
-    conda: env_file
-    log: "logs/log_build_GAMBA.log"
-    shell: """
-    (cd {params.snakedir}/scripts/gamba-tool
-    cargo build --release
-    cd {params.workdir}
-    cp -r {params.snakedir}/scripts/gamba-tool/target/release/{output} {params.workdir}
-    {params.workdir}/{output} --help ) 2>&1 | tee {log}
-    """
-
 ## Check input files
 rule input_files_stats:
     input:
