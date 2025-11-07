@@ -1,7 +1,7 @@
 #Rust tool GAMBA
 rule run_GAMBA_and_sanatizing:
     input:
-        GAMBA = rules.build_GAMBA.output,
+        GAMBA = "gamba",
         gtf = rules.run_stringtie_sample_annotations.output.gtf
     output:
         file = "GAMBA_results/{specie}_{sample}_guide{ref}_v{intron}_operons_found_t{threshold}.tsv",
