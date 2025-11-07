@@ -18,13 +18,13 @@ env_file2 = path.join(path.dirname(workflow.snakefile),"envs/CORAL-env.merge.yml
 in_genome = config["genome_fasta"]
 REF = config["reference_annot"]
 
-include: "{SNAKEDIR}/rules/common.smk"
-include: "{SNAKEDIR}/rules/alignment.smk"
-include: "{SNAKEDIR}/rules/sample-annot.smk"
-include: "{SNAKEDIR}/rules/gamba.smk"
-include: "{SNAKEDIR}/rules/busco.smk"
-include: "{SNAKEDIR}/rules/gffcmp.smk"
-include: "{SNAKEDIR}/rules/exp-matrix.smk"
+include: "rules/common.smk"
+include: "rules/alignment.smk"
+include: "rules/sample-annot.smk"
+include: "rules/gamba.smk"
+include: "rules/busco.smk"
+include: "rules/gffcmp.smk"
+include: "rules/exp-matrix.smk"
 
 rule all:
     input:
