@@ -244,10 +244,10 @@ rule run_stringtie_sample_annotations:
 ## Find and annotate operons and contained genes
 rule do_operon_annotations:
     input:
-        expand("GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_operons_found_t{threshold}.tsv", specie=config["specie"], sample=SAMPLES, ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        expand("GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_Operons_t{threshold}.clean.gtf", specie=config["specie"], sample=SAMPLES, ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        expand("GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_OperonGenes_t{threshold}.clean.gtf", specie=config["specie"], sample=SAMPLES, ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        expand("GAMBA_results/{specie}_guide{ref}_{sample}_v{intron}_opCLEAN_t{threshold}.clean.gtf", specie=config["specie"], sample=SAMPLES, ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+        expand("GAMBA_results/{specie}_{sample}_guide{ref}_v{intron}_operons_found_t{threshold}.tsv", specie=config["specie"], sample=SAMPLES, ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+        expand("GAMBA_results/{specie}_{sample}_guide{ref}_v{intron}_Operons_t{threshold}.clean.gtf", specie=config["specie"], sample=SAMPLES, ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+        expand("GAMBA_results/{specie}_{sample}_guide{ref}_v{intron}_OperonGenes_t{threshold}.clean.gtf", specie=config["specie"], sample=SAMPLES, ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+        expand("GAMBA_results/{specie}_{sample}_guide{ref}_v{intron}_opCLEAN_t{threshold}.clean.gtf", specie=config["specie"], sample=SAMPLES, ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("annotations/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.sorted.gtf", specie=config["specie"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"])
 
 #Rust tool GAMBA
@@ -266,21 +266,22 @@ rule run_GAMBA_and_sanatizing:
     log: "logs/{specie}_guide{ref}_{sample}_v{intron}_gambat{threshold}_GAMBA_run.log"
     threads: config["threads"]
     shell:"""
-    "sample_annotations/{specie}_{sample}_guide{ref}_v{intron}.gtf"
     gtf_name=$(basename {input.gtf} ".gtf")
+    echo "GTF file: $gtf_name"
+
     ./{input.GAMBA} -f {input.gtf} --threshold {params.threshold} -o "GAMBA_results" --log {log}
     
     awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
-    else print $0}}\' GAMBA_results/${gtf_name}_Operons_t{params.threshold}.gtf > ${gtf_name}_Operons_t{params.threshold}.tmp ; \
-    gffread --sort-alpha -F -T -o {output.gtfOPRNs} ${gtf_name}_Operons_t{params.threshold}.tmp
+    else print $0}}\' GAMBA_results/${{gtf_name}}_Operons_t{params.threshold}.gtf > ${{gtf_name}}_Operons_t{params.threshold}.tmp ; \
+    gffread --sort-alpha -F -T -o {output.gtfOPRNs} ${{gtf_name}}_Operons_t{params.threshold}.tmp
 
     awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
-    else print $0}}\' GAMBA_results/${gtf_name}_OperonGenes_t{params.threshold}.gtf > ${gtf_name}_OperonGenes_t{params.threshold}.tmp ; \
-    gffread --sort-alpha -F -T -o {output.gtfOpGs} ${gtf_name}_OperonGenes_t{params.threshold}.tmp
+    else print $0}}\' GAMBA_results/${{gtf_name}}_OperonGenes_t{params.threshold}.gtf > ${{gtf_name}}_OperonGenes_t{params.threshold}.tmp ; \
+    gffread --sort-alpha -F -T -o {output.gtfOpGs} ${{gtf_name}}_OperonGenes_t{params.threshold}.tmp
 
     awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
-    else print $0}}\' GAMBA_results/${gtf_name}_opCLEAN_t{params.threshold}.gtf > ${gtf_name}_opCLEAN_t{params.threshold}.tmp ; \
-    gffread --sort-alpha -F -T -o {output.gtfCLEAN} ${gtf_name}_opCLEAN_t{params.threshold}.tmp
+    else print $0}}\' GAMBA_results/${{gtf_name}}_opCLEAN_t{params.threshold}.gtf > ${{gtf_name}}_opCLEAN_t{params.threshold}.tmp ; \
+    gffread --sort-alpha -F -T -o {output.gtfCLEAN} ${{gtf_name}}_opCLEAN_t{params.threshold}.tmp
 
     rm {params.name}*{params.threshold}.tmp
     """
@@ -505,7 +506,7 @@ rule busco_plot:
         cp {params.workdir}{input.out_longtrans}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.noOPRNs_longtrans.txt
         cp {params.workdir}{input.out_noOPRNs}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.noOPRNs.txt
         cp {params.workdir}{input.out_andOPRNs}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.andOPRNs.txt
-        if [ -n "{params.workdir}{input.out_ref}" ]; then
+        if [ {input.out_ref} != "" ]; then
             cp {params.workdir}{input.out_ref}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.REF.txt
         fi
         python3 {params.snakedir}/scripts/generate_plot.py -wd {output.out_dir} ) 2> {log}
