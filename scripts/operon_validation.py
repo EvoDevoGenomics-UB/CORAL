@@ -81,7 +81,7 @@ for transcript in db.features_of_type("transcript"):
 
 # Store detected transcript pairs
 contained_pairs = []
-
+excluded_pairs = []
 # Find contained transcripts (with progress tracking)
 for chrom, transcripts in chrom_transcripts.items():
     print(f"Processing {chrom} ({len(transcripts)} transcripts)...")
@@ -99,8 +99,37 @@ for chrom, transcripts in chrom_transcripts.items():
                     opg_gene_id = sub_transcript.attributes['gene_id'][0]
                     if transcript.id == sub_transcript.id or operon_gene_id == opg_gene_id:
                         continue # Skip when comparing itself
-                    if (transcript.start <= (sub_transcript.start + 250 ) < (transcript.end+250)) and (transcript.end >= (sub_transcript.end - 250) > (transcript.start-250)):
-                        contained_pairs.append((transcript.chrom, transcript.strand, transcript.id, operon_gene_id, sub_transcript.id, opg_gene_id))
+                    # Check if coordinates suggest containment
+                    if (transcript.start <= (sub_transcript.start + 250) < (transcript.end + 250)) and \
+                    (transcript.end >= (sub_transcript.end - 250) > (transcript.start - 250)):
+
+                        # Now check exon overlap — make sure the sub_transcript overlaps at least one operon exon
+                        operon_exons = list(db.children(transcript, featuretype='exon', order_by='start'))
+                        sub_exons = list(db.children(sub_transcript, featuretype='exon', order_by='start'))
+
+                        overlap_found = False
+                        for op_exon in operon_exons:
+                            for sub_exon in sub_exons:
+                                # Allow small tolerance (±250 bp)
+                                if (op_exon.start <= (sub_exon.start + 250) < (op_exon.end + 250)) and \
+                                    (op_exon.end >= (sub_exon.end - 250) > (op_exon.start - 250)):
+                                #if (op_exon.start - 250 <= sub_exon.end) and (sub_exon.start <= op_exon.end + 250):
+                                    overlap_found = True
+                                    break
+                            if overlap_found:
+                                break
+
+                        # Only keep this pair if there's true exon overlap
+                        if overlap_found:
+                            contained_pairs.append(
+                                (transcript.chrom, transcript.strand, transcript.id, operon_gene_id, sub_transcript.id, opg_gene_id)
+                            )
+                        else:
+                            excluded_pairs.append((operon_gene_id, opg_gene_id))
+                            logging.warning(
+                                f"Excluded {sub_transcript.id} (gene {opg_gene_id}) inside {transcript.id} "
+                                f"because it lies entirely within an intron (no exon overlap)."
+                            )
 
 ######
 # Group operon/transcripts by chr and strand
@@ -127,8 +156,10 @@ operon_counts_def = Counter(operon for operon, _ in prefinal_pairs)
 out_operons = {operon for operon, count in operon_counts_def.items() if count < 2}
 # Filter out rows where the first column appears in the second column
 final_pairs_DEF = [pair for pair in prefinal_pairs if pair[0] not in out_operons]
-out_pairs_DEF = [pair for pair in prefinal_pairs if pair not in final_pairs_DEF]
-
+excluded_pairs2 = [pair for pair in prefinal_pairs if pair not in final_pairs_DEF]
+excluded_pairs
+out_pairs = excluded_pairs + excluded_pairs2
+out_pairs_DEF = out_pairs.sort()
 ##########################
 # Write to output file
 with open(output_file, "w") as out_file:
@@ -163,26 +194,46 @@ for transcript in db.features_of_type("transcript"):
 
 # Define output GTF filenames
 operon_gtf_file = out_prefix + "_OPRNvalidation.clean.gtf"
+# Build mapping: contained gene_id → operon_id
+gene_to_operon = {opg_gene_id: operon_gene_id for operon_gene_id, opg_gene_id in final_pairs_DEF}
+for operon_gene_id, _ in final_pairs_DEF:
+    gene_to_operon[operon_gene_id] = operon_gene_id
+
 # Write operon transcripts to GTF
 with open(operon_gtf_file, "w") as operon_out:
     for trans_id in all_trans_ids:
         trans_feature = db[trans_id]
+        trans_gene_id = trans_feature.attributes['gene_id'][0]
         # Write the transcript feature
-        operon_out.write(str(trans_feature).replace('""', '"').replace('";"', '";') + ";\n")
+        if trans_gene_id in gene_to_operon:
+            op_id = gene_to_operon[trans_gene_id]
+            new_attrs = f' operon_id "{op_id}";'
+        else:
+            new_attrs = ""
+        operon_out.write(str(trans_feature).replace('""', '"').replace('";"', '";') + new_attrs + ";\n")
         # Write its child features (e.g., exons)
         for feature in db.children(trans_id, featuretype='exon', order_by='start'):
             operon_out.write(str(feature).replace('""', '') + "\n")
+
 # Define output GTF filenames
-operon_gtf_file = out_prefix + "_OPRNvalidation.OpGclean.gtf"
+opg_gtf_file = out_prefix + "_OPRNvalidation.OpGclean.gtf"
 # Write operon transcripts to GTF
-with open(operon_gtf_file, "w") as operon_out:
+with open(opg_gtf_file, "w") as opg_out:
     for trans_id in gene_to_trans_ids:
         trans_feature = db[trans_id]
+        trans_gene_id = trans_feature.attributes['gene_id'][0]
         # Write the transcript feature
-        operon_out.write(str(trans_feature).replace('""', '"').replace('";"', '";') + ";\n")
+        if trans_gene_id in gene_to_operon:
+            op_id = gene_to_operon[trans_gene_id]
+            new_attrs = f' operon_id "{op_id}";'
+        else:
+            new_attrs = ""
+        # Write the transcript feature
+        opg_out.write(str(trans_feature).replace('""', '"').replace('";"', '";') + new_attrs + ";\n")
         # Write its child features (e.g., exons)
         for feature in db.children(trans_id, featuretype='exon', order_by='start'):
-            operon_out.write(str(feature).replace('""', '') + "\n")
+            opg_out.write(str(feature).replace('""', '') + "\n")
+
 # Define output GTF filenames
 excuded_gtf_file = out_prefix + "_OPRNvalidation.excluded.gtf"
 # Write operon transcripts to GTF

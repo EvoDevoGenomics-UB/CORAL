@@ -29,7 +29,7 @@ However, due to the presence of a submodule we recommend downloading it using:
 
 To run **CORAL**, simply modify the <code>CORAL-config.yaml</code> file with your desired parameters and execute it as any other _Snakemake_ workflow. We recommend running it with <code>--use-conda</code>, which will automatically create an environment to install all the dependecies specified in the <code>CORAL-env.yml</code> and <code>CORAL-env.merge.yml</code> files. Example command:
 
-    snakemake --use-conda --snakefile CORAL.smk --configfile CORAL-config.yaml --cores 4
+    snakemake --use-conda --configfile CORAL-config.yaml --cores 4
 
 ## Indicating the FASTQ files to use in the Config file
 There are two ways to indicate to CORAL where to find your long-read FASTQ files:
