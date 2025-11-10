@@ -1,0 +1,17 @@
+channels:
+    - conda-forge
+    - bioconda
+    - nanoporetech
+dependencies:
+    - python
+    - minimap2
+    - samtools>=1.9
+    - gffutils
+    - gffread
+    - seqkit
+    - stringtie==3.0.2
+    - hmmer
+    - busco==5.8.2
+    - pandas
+    - gffcompare
+    - rust
