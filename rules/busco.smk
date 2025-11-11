@@ -22,7 +22,7 @@ rule run_obtaining_fasta:
     output:
         fasta = "busco_analysis/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs_longest_trans_only.fasta" ,
         fasta_noOPRNs = "busco_analysis/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.fasta" ,
-        fasta_andOPRNs = "busco_analysis/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-and-OPRNs.fasta"
+        fasta_andOPRNs = "busco_analysis/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-andOPRNs.fasta"
     conda: env_file
     log: "logs/{specie}/log_obtaining_fasta_GTFs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
     shell:"""

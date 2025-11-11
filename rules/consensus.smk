@@ -80,7 +80,7 @@ rule run_final_annotation:
         opgenesgtf = rules.run_operon_annotation.output.opgenesgtfCLEAN
     output:
         noOPRNs = "annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.gtf" ,
-        andOPRNs = "annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-and-OPRNs.gtf"
+        andOPRNs = "annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-andOPRNs.gtf"
     params:
         freq = config["stringtie_freq"],
         g_param = config["stringtie_g"]
@@ -98,7 +98,7 @@ rule run_final_annotation:
      -G {input.mergegtf} \
      -l g -f {params.freq} -F 0 -T 0 -c 0 -g {params.g_param} \
      -o {output.andOPRNs} ; \
-    echo "  Final CLEAN-and-OPRNs done"
+    echo "  Final CLEAN-andOPRNs done"
     grep 'StringTie	transcript' {output.andOPRNs} | wc -l ) 2>&1 | tee {log}
     """
 
@@ -110,7 +110,7 @@ rule run_recover_coverage:
         bams = expand("alignments/{specie}/{specie}_{sample}_reads_aln_v{intron}.sorted.bam", 
             specie=config["specie"], sample=SAMPLES, intron=config["minimap2_max_intron"])
     output:
-        gtfFinal = "annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-and-OPRNs.counts.gtf",
+        gtfFinal = "annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-andOPRNs.counts.gtf",
         gtfFinal2 = "annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.counts.gtf"
     conda: env_file
     log: "logs/{specie}/log_recover_coverage_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
