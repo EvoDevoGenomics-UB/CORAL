@@ -3,6 +3,7 @@ import gffutils # type: ignore
 import sys
 import os
 import logging
+import re
 from collections import defaultdict, Counter
 
 # Check if the user provided a GTF file
@@ -62,13 +63,20 @@ for chrom in gene_transcripts:
     for gene_id, tx_list in gene_transcripts[chrom].items():
         max_len = 0
         longest_tx = None
+        opg_count = 0
         for tx in tx_list:
-            length = db.children_bp(transcript, child_featuretype='exon')  # sum of exon lengths
-            if length > max_len:
-                max_len = length
-                longest_tx = tx
+            if re.search("^OpG", tx.id):
+                longest_transcripts.append(tx.id)
+                opg_count += 1
+        if opg_count == 0:
+            for tx in tx_list:
+                length = db.children_bp(transcript, child_featuretype='exon')  # sum of exon lengths
+                if length > max_len:
+                    max_len = length
+                    longest_tx = tx
         if longest_tx:
-            longest_transcripts.append(longest_tx.id)
+            if longest_tx.id not in longest_transcripts:
+                longest_transcripts.append(longest_tx.id)
 
 # Write longest transcripts GTF
 with open(output_file, "w") as contained_out:
