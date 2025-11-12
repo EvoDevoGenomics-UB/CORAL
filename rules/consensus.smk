@@ -21,7 +21,7 @@ rule run_operon_annotation:
         excluded_file = "annotations/{specie}/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.sorted_OPRNvalidation.excluded.gtf",
         db_file = temp("annotations/{specie}/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.sorted_OPRNvalidation.db")
     params:
-        g_param = config["stringtie_g"],
+        g_param = config["stringtie_OpGs_g"],
         name = "{specie}_guide{ref}_v{intron}_gambat{threshold}",
         snakedir = SNAKEDIR
     log: 
@@ -31,7 +31,7 @@ rule run_operon_annotation:
     shell:"""
     (mkdir -p annotations ; mkdir -p annotations/{wildcards.specie} ;
     (for i in {input.gtfsopgenes} ; do echo $i ; done) > annotations/{wildcards.specie}/List_merge_OpGs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt ; \
-    stringtie --merge -l OpG -f 0 -F 0 -T 0 -c 0 -g '-150' -o {output.opgenesgtf} annotations/{wildcards.specie}/List_merge_OpGs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt ; \
+    stringtie --merge -l OpG -f 0 -F 0 -T 0 -c 0 -g {params.g_param} -o {output.opgenesgtf} annotations/{wildcards.specie}/List_merge_OpGs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt ; \
     grep 'StringTie	transcript' {output.opgenesgtf} | wc -l ; \
     (for i in {input.gtfsoperons} ; do echo $i ; done) > annotations/{wildcards.specie}/List_merge_OPRNs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt ; \
     stringtie --merge -l OPRN -f 0 -F 0 -T 0 -c 0 -g 0 -o {output.operongtf} annotations/{wildcards.specie}/List_merge_OPRNs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt ; \

@@ -53,6 +53,7 @@ stringtie_guide_opts: ["none"]
 operon_threshold: 1.00
 
 # Options passed to StringTie for merge annotations:
+stringtie_OpGs_g: '-150'
 stringtie_freq: 0.2
 stringtie_g: '-60'
 stringtie_merge_opts: "-F 0.5 -T 0 -c 2"
