@@ -1,7 +1,7 @@
 ##Busco-related rules
 rule run_longest_trans_filter:
     input:
-        gtf = rules.run_final_annotation.output.noOPRNs
+        gtf = rules.run_final_annotation_part1.output.noOPRNs
     output:
         filtergtf = "annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs_longest_trans_only.gtf"
     params:
@@ -17,8 +17,8 @@ rule run_obtaining_fasta:
     input:
         genome = in_genome ,
         gtf = rules.run_longest_trans_filter.output.filtergtf ,
-        gtf_noOPRNs = rules.run_final_annotation.output.noOPRNs ,
-        gtf_andORPNs = rules.run_final_annotation.output.andOPRNs
+        gtf_noOPRNs = rules.run_final_annotation_part1.output.noOPRNs ,
+        gtf_andORPNs = rules.run_final_annotation_part2.output.andOPRNs
     output:
         fasta = "busco_analysis/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs_longest_trans_only.fasta" ,
         fasta_noOPRNs = "busco_analysis/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.fasta" ,
