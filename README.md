@@ -15,7 +15,7 @@ The quality of the annotation is assayed with <i>BUSCO (v5.8)</i>, and optionall
 
 Schematic pipeline:
 
-<img width="695" height="1551" alt="Figure1_new" src="https://github.com/user-attachments/assets/1fe688f6-d507-4a5a-a065-45dd8b265965" />
+<img width="1795" height="2641" alt="Figure1_new_v2" src="https://github.com/user-attachments/assets/77123e49-5271-44e6-862b-b27d4225398f" />
 
 ## Installation
 This pipeline is build on _Snakemake_; therefore, you need to have _Snakemake_ installed (tested on v5.24.1).

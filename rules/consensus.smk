@@ -31,7 +31,7 @@ rule run_operon_annotation:
     shell:"""
     (mkdir -p annotations ; mkdir -p annotations/{wildcards.specie} ;
     (for i in {input.gtfsopgenes} ; do echo $i ; done) > annotations/{wildcards.specie}/List_merge_OpGs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt ; \
-    stringtie --merge -l OpG -f 0 -F 0 -T 0 -c 0 -g '-60' -o {output.opgenesgtf} annotations/{wildcards.specie}/List_merge_OpGs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt ; \
+    stringtie --merge -l OpG -f 0 -F 0 -T 0 -c 0 -g '-150' -o {output.opgenesgtf} annotations/{wildcards.specie}/List_merge_OpGs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt ; \
     grep 'StringTie	transcript' {output.opgenesgtf} | wc -l ; \
     (for i in {input.gtfsoperons} ; do echo $i ; done) > annotations/{wildcards.specie}/List_merge_OPRNs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt ; \
     stringtie --merge -l OPRN -f 0 -F 0 -T 0 -c 0 -g 0 -o {output.operongtf} annotations/{wildcards.specie}/List_merge_OPRNs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt ; \
@@ -61,44 +61,56 @@ rule run_gCLEAN_annotation:
 
     stringtie --merge annotations/{wildcards.specie}/List_merge_opCLEAN.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt \
      -l g -f {params.freq} {params.opts} -g {params.g_param} \
-     -o {output.cleanfinal}.tmp ; \
+     -o GTFfile.tmp ; \
     
-    gffcompare -r {input.oprngtf} {output.cleanfinal}.tmp -o filter
-    awk '{{if($3=="=") print $5}}' filter.{output.cleanfinal}.tmp.tmap > filter_list.tmp
-    gffread --nids filter_list.tmp {output.cleanfinal}.tmp -o {output.cleanfinal}
+    gffcompare -r {input.oprngtf} GTFfile.tmp -o filter
+    awk '{{if($3=="=" ) print $5}}' filter.GTFfile.tmp.tmap > filter_list.tmp
+    gffread --nids filter_list.tmp GTFfile.tmp -o {output.cleanfinal}
+    rm filter.* ; rm GTFfile.tmp ;
 
     echo "  Final merge CLEAN done" ; \
     grep 'StringTie	transcript' {output.cleanfinal} | wc -l ) 2>&1 | tee {log}
     """
 
 # Create Merge final consensus annotations
-rule run_final_annotation:
+rule run_final_annotation_part1:
     input:
-        cleanfinal = rules.run_gCLEAN_annotation.output.cleanfinal ,
-        mergegtf = rules.run_operon_annotation.output.def_file,
+        cleanfinal = rules.run_gCLEAN_annotation.output.cleanfinal,
         excluded_file = rules.run_operon_annotation.output.excluded_file,
         opgenesgtf = rules.run_operon_annotation.output.opgenesgtfCLEAN
     output:
-        noOPRNs = "annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.gtf" ,
-        andOPRNs = "annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-and-OPRNs.gtf"
+        noOPRNs = "annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.gtf"
     params:
         freq = config["stringtie_freq"],
-        g_param = config["stringtie_g"]
+        g_param = config["stringtie_g"],
+        snakedir = SNAKEDIR
     conda: env_file2
-    log: "logs/{specie}/log_final_annotations_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
+    log: "logs/{specie}/log_final_annotations_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_part1.log"
     shell:"""
     (stringtie --merge {input.cleanfinal} {input.excluded_file} \
      -G {input.opgenesgtf} \
      -l g -f {params.freq} -F 0 -T 0 -c 0 -g {params.g_param} \
      -o {output.noOPRNs} ; \
     echo "  Final CLEAN-noOPRNs done" ; \
-    grep 'StringTie	transcript' {output.noOPRNs} | wc -l ; \
-    
-    stringtie --merge {input.cleanfinal} {input.excluded_file} \
-     -G {input.mergegtf} \
-     -l g -f {params.freq} -F 0 -T 0 -c 0 -g {params.g_param} \
-     -o {output.andOPRNs} ; \
-    echo "  Final CLEAN-and-OPRNs done"
+    grep 'StringTie	transcript' {output.noOPRNs} | wc -l ; ) 2>&1 | tee {log}
+    """
+rule run_final_annotation_part2:
+    input:
+        noOPRNs = rules.run_final_annotation_part1.output.noOPRNs,
+        oprnsgtf = rules.run_operon_annotation.output.oprngtfCLEAN
+    output:
+        andOPRNs = "annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-andOPRNs.gtf"
+    params:
+        snakedir = SNAKEDIR
+    conda: env_file2
+    log: "logs/{specie}/log_final_annotations_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_part2.log"
+    shell:"""
+    (cat {input.oprnsgtf} {input.noOPRNs} > {output.andOPRNs}.1.tmp ; \
+    gffread --sort-alpha -F -T -o {output.andOPRNs}.2.tmp {output.andOPRNs}.1.tmp ; 
+    {params.snakedir}/scripts/add_operonID.py -f {output.andOPRNs}.2.tmp -o {output.andOPRNs} --log {output.andOPRNs}.log
+    rm {output.andOPRNs}*.OPRNids.db {output.andOPRNs}*.tmp
+
+    echo "  Final CLEAN-andOPRNs done"
     grep 'StringTie	transcript' {output.andOPRNs} | wc -l ) 2>&1 | tee {log}
     """
 
@@ -110,7 +122,7 @@ rule run_recover_coverage:
         bams = expand("alignments/{specie}/{specie}_{sample}_reads_aln_v{intron}.sorted.bam", 
             specie=config["specie"], sample=SAMPLES, intron=config["minimap2_max_intron"])
     output:
-        gtfFinal = "annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-and-OPRNs.counts.gtf",
+        gtfFinal = "annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-andOPRNs.counts.gtf",
         gtfFinal2 = "annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.counts.gtf"
     conda: env_file
     log: "logs/{specie}/log_recover_coverage_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
