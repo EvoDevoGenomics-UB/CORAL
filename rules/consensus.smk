@@ -64,8 +64,8 @@ rule run_gCLEAN_annotation:
      -o GTFfile.tmp ; \
     
     gffcompare -r {input.oprngtf} GTFfile.tmp -o filter
-    awk '{{if($3=="=" ) print $5}}' filter.GTFfile.tmp.tmap > filter_list.tmp
-    gffread --nids filter_list.tmp GTFfile.tmp -o {output.cleanfinal}
+    awk '{{if($3=="=" ) print $5}}' filter.GTFfile.tmp.tmap > filter.list.tmp
+    gffread --nids filter.list.tmp GTFfile.tmp -o {output.cleanfinal}
     rm filter.* ; rm GTFfile.tmp ;
 
     echo "  Final merge CLEAN done" ; \
