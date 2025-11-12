@@ -117,8 +117,8 @@ rule run_final_annotation_part2:
 # Obtaining coverage of final annotation
 rule run_recover_coverage:
     input:
-        gtf = rules.run_final_annotation.output.andOPRNs ,
-        gtf2 = rules.run_final_annotation.output.noOPRNs ,
+        gtf = rules.run_final_annotation_part2.output.andOPRNs ,
+        gtf2 = rules.run_final_annotation_part1.output.noOPRNs ,
         bams = expand("alignments/{specie}/{specie}_{sample}_reads_aln_v{intron}.sorted.bam", 
             specie=config["specie"], sample=SAMPLES, intron=config["minimap2_max_intron"])
     output:
