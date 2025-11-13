@@ -33,7 +33,7 @@ rule run_obtaining_fasta:
     """
 rule busco_download_lineage:
     output:
-        lin_dir = directory(path.join(WORKDIR, "busco_downloads/lineages/", config["lineages"]))
+        lin_dir = directory(path.join("busco_downloads/lineages/", config["lineages"]))
     params:
         lineage = config["lineages"]
     conda: env_file
