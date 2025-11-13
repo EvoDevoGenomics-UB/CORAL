@@ -1,0 +1,53 @@
+name: Tests
+
+on:
+  push:
+    branches: [ "main" , "snakemake" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  linting:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Linting
+      uses: snakemake/snakemake-github-action@v1.22.0
+      with:
+        directory: .test
+        snakefile: Snakefile
+        args: "--configfile .test/config.yaml --lint"
+
+  dry-run:
+    runs-on: ubuntu-latest
+    needs:
+      - linting
+    steps:
+    - name: Checkout repository with submodules
+      uses: actions/checkout@v5
+      with:
+        submodules: recursive
+    - name: Test workflow
+      uses: snakemake/snakemake-github-action@v1.22.0
+      with:
+        directory: .test
+        snakefile: Snakefile
+        args: "--configfile .test/config.yaml --use-conda --dry-run --cores 2 "
+        show-disk-usage-on-error: true
+
+  run-workflow:
+    runs-on: ubuntu-latest
+    needs:
+      - linting
+      - dry-run
+    steps:
+    - name: Checkout repository with submodules
+      uses: actions/checkout@v5
+      with:
+        submodules: recursive
+    - name: Test workflow
+      uses: snakemake/snakemake-github-action@v1.22.0
+      with:
+        directory: .test
+        snakefile: Snakefile
+        args: "--configfile .test/config.yaml --use-conda --show-failed-logs --cores 2 --conda-cleanup-pkgs cache"
+        show-disk-usage-on-error: true

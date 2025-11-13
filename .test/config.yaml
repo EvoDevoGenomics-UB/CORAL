@@ -1,0 +1,66 @@
+---
+## General pipeline parameters:
+# Threads:
+threads: 4
+# ABSOLUTE path to working directory (IMPORTAT to include last "/"):
+#workdir_top: ".test/"
+# Name of the Results folder inside the working directory (IMPORTAT to include last "/"):
+pipeline: ".test/Test_run/"
+# Here the '.snakemake' folder containing the conda environments will be created
+# together with all teh result files and folders. 
+
+### Pipeline-specific parameters:
+# SAMPLES
+#You can use give a samplesheet in TSV format with two columns: SampleID absolute_path/File.fastq
+samplesheet: ".test/Samples.tsv"
+#Other option is to give the fastq files as a combination of: {data_dir}{samples}{data_sufix}
+#This is useful for samples with highly similar names with just diffrent ID.
+#{data_dir} need to be the absolute path to the directory
+#{samples} will be use for nameing any output file derivated of those fastq.
+#data_dir: "/data2/cristian/ntorres2/LongRead_RNAseq/Workspaces/BAR_longreads_C05C06/processed_reads/FAX17881_1_"
+#samples: ["BP01","BP02","BP03","BP04","BP05","BP06","BP07","BP08","BP09","BP10new","BP11","BP12"]
+#data_sufix: "_full_length_reads.clean.fq"
+
+# Specie name, it will be use for naming output files
+specie: ["CORAL"]
+# Input genome
+genome_fasta: ".test/data/genome.fa"
+# Run a Gffcomapre with the reference?
+run_gffcomapre: True
+# Absolute path to reference annotation (optional)
+reference_annot: ".test/data/ref_annotation.gtf"
+# Minimap2 options when generating index
+minimap_index_opts: "-k14"
+
+# Extra options passed to minimap2 when aligning the reads
+minimap2_opts: "-ax splice"
+minimap2_max_intron: "10k"
+minimum_mapping_quality: 40
+
+# Options passed to StringTie when performing sample annotations:
+stringtie_strand: "--fr"
+stringtie_opts: "-M 0.75 -j 2 -a 15 "
+stringtie_guide_opts: ["REF", "none"]
+# You can use stringtie_guide_opts: ["REF","none"] to produce two annotations,
+# "REF" using the reference annotation as guide annotation, and
+# "none" for creating an annotation without any guide annotation.
+
+# GAMBA-tool options:
+operon_threshold: 1.00
+
+# Options passed to StringTie for merge annotations:
+stringtie_OpGs_g: '-150'
+stringtie_freq: 0.2
+stringtie_g: '-60'
+stringtie_merge_opts: "-F 0.5 -T 0 -c 2"
+
+# BUSCO options
+lineages: metazoa_odb10
+
+# Create an expression matrix?
+run_expression_matrix: True
+# Mean length of long-reads (to use for expression matrix)
+length: 860
+
+####
+#comand to execute it: snakemake --use-conda --snakefile CORAL.smk --cores 8
