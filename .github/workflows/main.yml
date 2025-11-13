@@ -34,7 +34,6 @@ jobs:
         directory: .
         snakefile: Snakefile
         args: "--configfile ./.test/config.yaml --use-conda --dry-run --cores 2 "
-        show-disk-usage-on-error: true
 
   run-workflow:
     runs-on: ubuntu-latest

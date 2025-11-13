@@ -24,7 +24,7 @@ samplesheet: ".test/Samples.tsv"
 # Specie name, it will be use for naming output files
 specie: ["CORAL"]
 # Input genome
-genome_fasta: ".test/data/genome.fa"
+genome_fasta: ".test/data/genome.fa.gz"
 # Run a Gffcomapre with the reference?
 run_gffcomapre: True
 # Absolute path to reference annotation (optional)
