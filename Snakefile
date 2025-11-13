@@ -7,7 +7,7 @@ import sys
 from snakemake.utils import min_version
 min_version("5.24")
 
-configfile: path.join(path.dirname(workflow.snakefile), "CORAL-config.yaml")
+configfile: os.environ.get("SNAKEMAKE_CONFIGFILE", path.join(path.dirname(workflow.snakefile), "CORAL-config.yaml"))
 workdir: path.join(config["workdir_top"], config["pipeline"])
 
 WORKDIR = path.join(config["workdir_top"], config["pipeline"])
