@@ -1,4 +1,3 @@
-Sample1 .test/data/Sample1_p01.fq.gz
+Sample1 .test/data/Sample1.fastq.gz
 Sample2 .test/data/Sample2_p01.1.fq.gz
 Sample2 .test/data/Sample2_p01.2.fq.gz
-Sample3 .test/data/Sample3.fastq.gz
