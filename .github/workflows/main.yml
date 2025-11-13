@@ -51,4 +51,4 @@ jobs:
       with:
         directory: .
         snakefile: Snakefile
-        args: "--configfile .test/config.yaml --use-conda --show-failed-logs --cores 2 --conda-cleanup-pkgs cache"
+        args: "--configfile .test/config.yaml --use-conda --show-failed-logs --cores 2 --conda-cleanup-pkgs cache --latency-wait 150"
