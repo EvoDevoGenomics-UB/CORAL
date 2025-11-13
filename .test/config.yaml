@@ -3,9 +3,9 @@
 # Threads:
 threads: 4
 # ABSOLUTE path to working directory (IMPORTAT to include last "/"):
-workdir_top: ".test/"
+#workdir_top: ".test/"
 # Name of the Results folder inside the working directory (IMPORTAT to include last "/"):
-pipeline: "Test_run/"
+pipeline: ".test/Test_run/"
 # Here the '.snakemake' folder containing the conda environments will be created
 # together with all teh result files and folders. 
 
