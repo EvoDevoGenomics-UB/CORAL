@@ -38,6 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - linting
+      - dry-run
     steps:
     - name: Checkout repository with submodules
       uses: actions/checkout@v5

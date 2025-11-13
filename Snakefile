@@ -8,7 +8,7 @@ from snakemake.utils import min_version
 min_version("5.24")
 
 configfile: path.join(path.dirname(workflow.snakefile),"CORAL-config.yaml")
-workdir: path.join(config["workdir_top"], config["pipeline"])
+#workdir: path.join(config["workdir_top"], config["pipeline"])
 
 WORKDIR = path.join(path.dirname(workflow.snakefile),config["workdir_top"], config["pipeline"])
 SNAKEDIR = path.dirname(workflow.snakefile)
