@@ -11,7 +11,6 @@ configfile: path.join(path.dirname(workflow.snakefile),"CORAL-config.yaml")
 workdir: path.join(config["workdir_top"], config["pipeline"])
 
 WORKDIR = path.join(config["workdir_top"], config["pipeline"])
-WORKDIR = path.join(path.dirname(workflow.snakefile), config["pipeline"])
 SNAKEDIR = path.dirname(workflow.snakefile)
 env_file = path.join(path.dirname(workflow.snakefile),"envs/CORAL-env.yml")
 env_file2 = path.join(path.dirname(workflow.snakefile),"envs/CORAL-env.merge.yml")

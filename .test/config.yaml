@@ -3,7 +3,7 @@
 # Threads:
 threads: 4
 # ABSOLUTE path to working directory (IMPORTAT to include last "/"):
-workdir_top: "/github/workspace/.test/"
+workdir_top: "/home/runner/work/CORAL/CORAL/.test/"
 # Name of the Results folder inside the working directory (IMPORTAT to include last "/"):
 pipeline: "Test_run/"
 # Here the '.snakemake' folder containing the conda environments will be created
