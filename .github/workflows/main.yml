@@ -13,7 +13,6 @@ jobs:
     - name: Linting
       uses: snakemake/snakemake-github-action@v1.25.1
       with:
-        directory: .test
         snakefile: Snakefile
         args: "--configfile .test/config.yaml --lint"
 
@@ -29,7 +28,6 @@ jobs:
     - name: Test workflow
       uses: snakemake/snakemake-github-action@v1.25.1
       with:
-        directory: .test
         snakefile: Snakefile
         args: "--configfile .test/config.yaml --use-conda --dry-run --cores 2 "
         show-disk-usage-on-error: true
@@ -47,7 +45,6 @@ jobs:
     - name: Test workflow
       uses: snakemake/snakemake-github-action@v1.25.1
       with:
-        directory: .test
         snakefile: Snakefile
         args: "--configfile .test/config.yaml --use-conda --show-failed-logs --cores 2 --conda-cleanup-pkgs cache"
         show-disk-usage-on-error: true
