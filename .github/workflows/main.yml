@@ -7,8 +7,24 @@ on:
     branches: [ "main" ]
 
 jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository with submodules
+      uses: actions/checkout@v5
+      with:
+        submodules: recursive
+    - name: Debug file structure
+      run:
+        echo "Current directory:"
+        pwd
+        echo "Listing files:"
+        ls -R .
+  
   linting:
     runs-on: ubuntu-latest
+    needs:
+      - debug
     steps:
     - name: Linting
       uses: snakemake/snakemake-github-action@v1.22.0
