@@ -44,7 +44,7 @@ else:
     }
 
 def get_final_output():
-    rule_all_input_list=["logs/versions.txt","gamba",
+    rule_all_input_list=["logs/versions.txt","scripts/gamba-tool/target/release/gamba",
         expand("logs/{sample}_stats_input_reads.txt", sample=SAMPLES),
         expand("alignments/{specie}/{specie}_{sample}_reads_aln_v{intron}.sorted.bam", specie=config["specie"], sample=SAMPLES, intron=config["minimap2_max_intron"]),
         expand("alignments/{specie}/{specie}_{sample}_reads_aln_sorted_v{intron}.stats.txt", specie=config["specie"], sample=SAMPLES, intron=config["minimap2_max_intron"]),
