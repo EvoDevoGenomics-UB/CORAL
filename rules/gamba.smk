@@ -2,7 +2,8 @@
 rule build_GAMBA:
     output: path.join(WORKDIR, "gamba")
     params:
-        snakedir = SNAKEDIR
+        snakedir = SNAKEDIR,
+        workdir = WORKDIR
     conda: env_file
     log: "logs/log_build_GAMBA.log"
     shell: """
