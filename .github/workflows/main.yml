@@ -15,7 +15,7 @@ jobs:
       with:
         directory: .test
         snakefile: Snakefile
-        args: "--configfile .test/config.yaml --lint"
+        args: "--configfile config.yaml --lint"
 
   run-workflow:
     runs-on: ubuntu-latest
@@ -31,5 +31,5 @@ jobs:
       with:
         directory: .test
         snakefile: Snakefile
-        args: "--configfile .test/config.yaml --use-conda --show-failed-logs --cores 2 --conda-cleanup-pkgs cache"
+        args: "--configfile config.yaml --use-conda --show-failed-logs --cores 2 --conda-cleanup-pkgs cache"
         show-disk-usage-on-error: true
