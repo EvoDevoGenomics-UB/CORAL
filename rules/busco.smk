@@ -1,19 +1,4 @@
 ##Busco-related rules
-rule check_genome_format:
-    input:
-        genome = in_genome
-    output:
-        genome = temp("{specie}_genome.fasta")
-    conda: env_file
-    log: "logs/log_{specie}_genome_format.log"
-    shell:"""
-    (if ls {input.genome} | grep -q '.gz' ; then
-        seqkit seq {input.genome} -o {output.genome}
-    else
-        ln -sf {input.genome} {output.genome} 
-    fi ) 2> {log}
-    """
-
 rule run_longest_trans_filter:
     input:
         gtf = rules.run_final_annotation.output.noOPRNs
