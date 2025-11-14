@@ -63,9 +63,13 @@ rule run_gCLEAN_annotation:
      -l g -f {params.freq} {params.opts} -g {params.g_param} \
      -o GTFfile.tmp ; \
     
-    gffcompare -r {input.oprngtf} GTFfile.tmp -o filter
-    awk '{{if($3=="=" ) print $5}}' filter.GTFfile.tmp.tmap > filter.list.tmp
-    gffread --nids filter.list.tmp GTFfile.tmp -o {output.cleanfinal}
+    if [ $(grep 'StringTie	transcript' {input.oprngtf} | wc -l ) -ge 1 ] ; then
+        gffcompare -r {input.oprngtf} GTFfile.tmp -o filter
+        awk '{{if($3=="=" ) print $5}}' filter.GTFfile.tmp.tmap > filter.list.tmp
+        gffread --nids filter.list.tmp GTFfile.tmp -o {output.cleanfinal}
+    else
+        cp GTFfile.tmp {output.cleanfinal}
+    fi
     rm filter.* ; rm GTFfile.tmp ;
 
     echo "  Final merge CLEAN done" ; \
