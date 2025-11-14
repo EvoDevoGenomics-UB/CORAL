@@ -8,7 +8,7 @@ rule check_genome_format:
     log: "logs/log_{specie}_genome_format.log"
     shell:"""
     (if ls {input.genome} | grep -q '.gz' ; then
-        gunzip -c {input.genome} > {output.genome}
+        seqkit seq {input.genome} -o {output.genome}
     else
         ln -sf {input.genome} {output.genome} 
     fi ) 2> {log}
