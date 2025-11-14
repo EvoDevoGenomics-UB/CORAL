@@ -10,7 +10,8 @@ rule check_genome_format:
     (if [ $(file {input.genome} | grep -q 'gzip' ) ] ; then
         gunzip -c {input.genome} > {output.genome}
     else
-        ln -sf {input.genome} {output.genome} ) 2> {log}
+        ln -sf {input.genome} {output.genome} 
+    fi ) 2> {log}
     """
 
 rule run_longest_trans_filter:
