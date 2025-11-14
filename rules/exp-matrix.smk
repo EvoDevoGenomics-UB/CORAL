@@ -1,7 +1,7 @@
 ## Expression matrix creation
 rule run_expression_matrix:
     input:
-        gtf = rules.run_final_annotation_part2.output.andOPRNs ,
+        gtf = rules.run_final_annotation.output.andOPRNs ,
         bams = expand("alignments/{{specie}}/{{specie}}_{sample}_reads_aln_v{{intron}}.sorted.bam", sample=SAMPLES)
     output:
         out_file_g = "Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-andOPRNs/gene_count_matrix.csv",
