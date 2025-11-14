@@ -78,7 +78,9 @@ rule run_busco_reference_annot:
         mkdir -p busco_analysis
         if file {input.genome} | grep -q 'gzip'; then
             # genome is compressed
-            gzip -dc {input.genome} | gffread {input.ref_annot} -g - -w {output.fasta}
+            gunzip -c {input.genome} > genome.tmp.fasta
+            gffread {input.ref_annot} -g genome.tmp.fasta -w {output.fasta}
+            rm genome.tmp.fasta*
         else
             # genome is not compressed
             gffread -g {input.genome} -w {output.fasta} {input.ref_annot}
