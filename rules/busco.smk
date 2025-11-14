@@ -4,11 +4,10 @@ rule check_genome_format:
         genome = in_genome
     output:
         genome = temp("{specie}_genome.fasta")
-    params:
     conda: env_file
     log: "logs/log_{specie}_genome_format.log"
     shell:"""
-    (if file {input.genome} | grep -q 'gzip' ; then
+    (if [ $(file {input.genome} | grep -q 'gzip' ) ] ; then
         gunzip -c {input.genome} > {output.genome}
     else
         ln -sf {input.genome} {output.genome} ) 2> {log}

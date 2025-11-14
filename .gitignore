@@ -5,3 +5,4 @@ scripts/gamba-tool/target
 .DS_Store
 .test/Test_run/.snakemake/**
 .test/Test_run/**
+.snakemake/**
