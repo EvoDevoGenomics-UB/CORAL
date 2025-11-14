@@ -14,9 +14,9 @@ jobs:
     - name: Linting
       uses: snakemake/snakemake-github-action@v1.22.0
       with:
-        directory: .
-        snakefile: Snakefile
-        args: "--configfile .test/config.yaml --lint"
+        directory: .test/Test_run
+        snakefile: ../../Snakefile
+        args: "--configfile ../../.test/config.yaml --lint"
 
   dry-run:
     runs-on: ubuntu-latest
@@ -31,9 +31,9 @@ jobs:
     - name: Test workflow
       uses: snakemake/snakemake-github-action@v1.22.0
       with:
-        directory: .
-        snakefile: Snakefile
-        args: "--configfile .test/config.yaml --use-conda --dry-run --cores 2 "
+        directory: .test/Test_run
+        snakefile: ../../Snakefile
+        args: "--configfile ../../.test/config.yaml --use-conda --dry-run --cores 2 "
 
   run-workflow:
     runs-on: ubuntu-latest
@@ -49,6 +49,6 @@ jobs:
     - name: Test workflow
       uses: snakemake/snakemake-github-action@v1.22.0
       with:
-        directory: .
-        snakefile: Snakefile
-        args: "--configfile .test/config.yaml --use-conda --show-failed-logs --cores 2 --conda-cleanup-pkgs cache --latency-wait 150"
+        directory: .test/Test_run
+        snakefile: ../../Snakefile
+        args: "--configfile ../../.test/config.yaml --use-conda --show-failed-logs --cores 2 --conda-cleanup-pkgs cache --latency-wait 150"
