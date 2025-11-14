@@ -39,7 +39,7 @@ if "samplesheet" in config and config["samplesheet"]:
 else:
     SAMPLES = config["samples"]
     SAMPLE_TO_FASTQ = {
-        s: [os.path.join(config["data_dir"], f"{s}{config['data_sufix']}")]
+        s: [f"{config['data_dir']}{s}{config['data_suffix']}"]
         for s in SAMPLES
     }
 

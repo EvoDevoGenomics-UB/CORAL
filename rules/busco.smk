@@ -1,4 +1,19 @@
 ##Busco-related rules
+rule check_genome_format:
+    input:
+        genome = in_genome
+    output:
+        genome = tmp("{specie}_genome.fasta")
+    params:
+    conda: env_file
+    log: "logs/log_{specie}_genome_format.log"
+    shell:"""
+    (if file {input.genome} | grep -q 'gzip' ; then
+        gunzip -c {input.genome} > {output.genome}
+    else
+        ln -sf {input.genome} {output.genome} ) 2> {log}
+    """
+
 rule run_longest_trans_filter:
     input:
         gtf = rules.run_final_annotation_part1.output.noOPRNs
@@ -15,7 +30,7 @@ rule run_longest_trans_filter:
 
 rule run_obtaining_fasta:
     input:
-        genome = in_genome ,
+        genome = rules.check_genome_format.output.genome ,
         gtf = rules.run_longest_trans_filter.output.filtergtf ,
         gtf_noOPRNs = rules.run_final_annotation_part1.output.noOPRNs ,
         gtf_andORPNs = rules.run_final_annotation_part2.output.andOPRNs
@@ -65,7 +80,7 @@ rule run_busco_analyses:
 rule run_busco_reference_annot:
     input:
         lin_dir = rules.busco_download_lineage.output.lin_dir ,
-        genome = in_genome ,
+        genome = rules.check_genome_format.output.genome ,
         ref_annot = REF
     output:
         fasta = "busco_analysis/{specie}/{specie}_LRannot_REF.fasta" ,
@@ -76,15 +91,7 @@ rule run_busco_reference_annot:
     log: "logs/{specie}/log_busco_reference_annot_{specie}.log"
     shell:""" (
         mkdir -p busco_analysis
-        if file {input.genome} | grep -q 'gzip'; then
-            # genome is compressed
-            gunzip -c {input.genome} > genome.tmp.fasta
-            gffread {input.ref_annot} -g genome.tmp.fasta -w {output.fasta}
-            rm genome.tmp.fasta*
-        else
-            # genome is not compressed
-            gffread -g {input.genome} -w {output.fasta} {input.ref_annot}
-        fi
+        gffread -g {input.genome} -w {output.fasta} {input.ref_annot}
         busco -i {output.fasta} -l {input.lin_dir} -o {output.out_ref} -m transcriptome ) 2>&1 | tee {log}
     """
 
