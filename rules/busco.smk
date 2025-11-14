@@ -76,8 +76,13 @@ rule run_busco_reference_annot:
     log: "logs/{specie}/log_busco_reference_annot_{specie}.log"
     shell:""" (
         mkdir -p busco_analysis
-        gffread -g {input.genome} -w {output.fasta} {input.ref_annot}
-        seqkit stats {output.fasta}
+        if file {input.genome} | grep -q 'gzip'; then
+            # genome is compressed
+            gzip -dc {input.genome} | gffread {input.ref_annot} -g - -w {output.fasta}
+        else
+            # genome is not compressed
+            gffread -g {input.genome} -w {output.fasta} {input.ref_annot}
+        fi
         busco -i {output.fasta} -l {input.lin_dir} -o {output.out_ref} -m transcriptome ) 2>&1 | tee {log}
     """
 
