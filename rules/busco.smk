@@ -7,7 +7,7 @@ rule check_genome_format:
     conda: env_file
     log: "logs/log_{specie}_genome_format.log"
     shell:"""
-    (if [ $(file {input.genome} | grep -q 'gzip' ) ] ; then
+    (if ls {input.genome} | grep -q '.gz' ; then
         gunzip -c {input.genome} > {output.genome}
     else
         ln -sf {input.genome} {output.genome} 
