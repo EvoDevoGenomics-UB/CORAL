@@ -1,4 +1,19 @@
 ##Busco-related rules
+rule check_genome_format:
+    input:
+        genome = in_genome
+    output:
+        genome = temp("{specie}_genome.fasta")
+    conda: env_file
+    log: "logs/log_{specie}_genome_format.log"
+    shell:"""
+    (if ls {input.genome} | grep -q '.gz' ; then
+        seqkit seq {input.genome} -o {output.genome}
+    else
+        ln -sf {input.genome} {output.genome} 
+    fi ) 2> {log}
+    """
+
 rule run_longest_trans_filter:
     input:
         gtf = rules.run_final_annotation_part1.output.noOPRNs
@@ -15,7 +30,7 @@ rule run_longest_trans_filter:
 
 rule run_obtaining_fasta:
     input:
-        genome = in_genome ,
+        genome = rules.check_genome_format.output.genome ,
         gtf = rules.run_longest_trans_filter.output.filtergtf ,
         gtf_noOPRNs = rules.run_final_annotation_part1.output.noOPRNs ,
         gtf_andORPNs = rules.run_final_annotation_part2.output.andOPRNs
@@ -33,13 +48,14 @@ rule run_obtaining_fasta:
     """
 rule busco_download_lineage:
     output:
-        lin_dir = directory(path.join(WORKDIR, "busco_downloads/lineages/", config["lineages"]))
+        lin_dir = directory(path.join("busco_downloads/lineages/", config["lineages"]))
     params:
         lineage = config["lineages"]
     conda: env_file
     log: "logs/log_busco_download_lineage.log"
     shell:"""
-        (busco --download {params.lineage} --download_path {output.lin_dir} ) 2> {log}
+        (busco --download {params.lineage} --download_path {output.lin_dir} 
+        ls -l {output.lin_dir} ) 2> {log}
     """
 rule run_busco_analyses:
     input:
@@ -64,7 +80,7 @@ rule run_busco_analyses:
 rule run_busco_reference_annot:
     input:
         lin_dir = rules.busco_download_lineage.output.lin_dir ,
-        genome = in_genome ,
+        genome = rules.check_genome_format.output.genome ,
         ref_annot = REF
     output:
         fasta = "busco_analysis/{specie}/{specie}_LRannot_REF.fasta" ,
@@ -76,7 +92,7 @@ rule run_busco_reference_annot:
     shell:""" (
         mkdir -p busco_analysis
         gffread -g {input.genome} -w {output.fasta} {input.ref_annot}
-        busco -i {output.fasta} -l {input.lin_dir} -o {output.out_ref} -m transcriptome ) 2> {log}
+        busco -i {output.fasta} -l {input.lin_dir} -o {output.out_ref} -m transcriptome ) 2>&1 | tee {log}
     """
 
 busco_ref_input=[]

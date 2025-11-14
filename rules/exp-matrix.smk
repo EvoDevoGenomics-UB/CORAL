@@ -7,7 +7,7 @@ rule run_expression_matrix:
         out_file_g = "Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-andOPRNs/gene_count_matrix.csv",
         out_file_t = "Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-andOPRNs/transcript_count_matrix.csv"
     params:
-        result_dir = directory("Expression_matrix/{specie}"),
+        result_dir = lambda wildcards, output: os.path.dirname(os.path.dirname(output[0])),
         samples = config["samples"],
         length = config["length"],
         snakedir = SNAKEDIR

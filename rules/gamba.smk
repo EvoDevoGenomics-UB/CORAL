@@ -7,11 +7,13 @@ rule build_GAMBA:
     conda: env_file
     log: "logs/log_build_GAMBA.log"
     shell: """
-    (cd {params.snakedir}/scripts/gamba-tool
+    (pwd
+    cd {params.snakedir}/scripts/gamba-tool
     cargo build --release
     cd {params.workdir}
     cp -r {params.snakedir}/scripts/gamba-tool/target/release/{output} {params.workdir}
-    {params.workdir}/{output} --help ) 2>&1 | tee {log}
+    pwd
+    ./{output} --help ) 2>&1 | tee {log}
     """
 
 rule run_GAMBA_and_sanatizing:

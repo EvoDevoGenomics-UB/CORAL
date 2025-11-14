@@ -1,7 +1,7 @@
 gtfsoperons_samples=[]
 gtfsopgenes_samples=[]
 gtfsclean_samples=[]
-for SAMPLE in config["samples"]:
+for SAMPLE in SAMPLES:
     gtfsoperons_samples.append("GAMBA_results/{{specie}}/{{specie}}_{}_guide{{ref}}_v{{intron}}_Operons_t{{threshold}}.clean.gtf".format(SAMPLE))
     gtfsopgenes_samples.append("GAMBA_results/{{specie}}/{{specie}}_{}_guide{{ref}}_v{{intron}}_OperonGenes_t{{threshold}}.clean.gtf".format(SAMPLE))
     gtfsclean_samples.append("GAMBA_results/{{specie}}/{{specie}}_{}_guide{{ref}}_v{{intron}}_opCLEAN_t{{threshold}}.clean.gtf".format(SAMPLE))

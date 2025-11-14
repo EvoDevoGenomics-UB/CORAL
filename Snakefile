@@ -7,11 +7,10 @@ import sys
 from snakemake.utils import min_version
 min_version("5.24")
 
-configfile: path.join(path.dirname(workflow.snakefile),"CORAL-config.yaml")
-#workdir: path.join(config["workdir_top"], config["pipeline"])
+configfile: os.environ.get("SNAKEMAKE_CONFIGFILE", path.join(path.dirname(workflow.snakefile), "CORAL-config.yaml"))
+workdir: path.join(config["workdir_top"], config["pipeline"])
 
-#WORKDIR = path.join(path.dirname(workflow.snakefile), config["workdir_top"], config["pipeline"])
-WORKDIR = path.join(path.dirname(workflow.snakefile), config["pipeline"])
+WORKDIR = path.join(config["workdir_top"], config["pipeline"])
 SNAKEDIR = path.dirname(workflow.snakefile)
 env_file = path.join(path.dirname(workflow.snakefile),"envs/CORAL-env.yml")
 env_file2 = path.join(path.dirname(workflow.snakefile),"envs/CORAL-env.merge.yml")

@@ -10,12 +10,13 @@ jobs:
   linting:
     runs-on: ubuntu-latest
     steps:
+    - uses: actions/checkout@v5
     - name: Linting
       uses: snakemake/snakemake-github-action@v1.22.0
       with:
-        directory: .test
+        directory: .test/Test_run
         snakefile: Snakefile
-        args: "--configfile .test/config.yaml --lint"
+        args: "--configfile /github/workspace/.test/config.yaml --lint"
 
   dry-run:
     runs-on: ubuntu-latest
@@ -26,13 +27,13 @@ jobs:
       uses: actions/checkout@v5
       with:
         submodules: recursive
+        token: ${{ secrets.GITHUB_TOKEN }}
     - name: Test workflow
       uses: snakemake/snakemake-github-action@v1.22.0
       with:
-        directory: .test
+        directory: .test/Test_run
         snakefile: Snakefile
-        args: "--configfile .test/config.yaml --use-conda --dry-run --cores 2 "
-        show-disk-usage-on-error: true
+        args: "--configfile /github/workspace/.test/config.yaml --use-conda --dry-run --cores 2 "
 
   run-workflow:
     runs-on: ubuntu-latest
@@ -44,10 +45,10 @@ jobs:
       uses: actions/checkout@v5
       with:
         submodules: recursive
+        token: ${{ secrets.GITHUB_TOKEN }}
     - name: Test workflow
       uses: snakemake/snakemake-github-action@v1.22.0
       with:
-        directory: .test
+        directory: .test/Test_run
         snakefile: Snakefile
-        args: "--configfile .test/config.yaml --use-conda --show-failed-logs --cores 2 --conda-cleanup-pkgs cache"
-        show-disk-usage-on-error: true
+        args: "--configfile /github/workspace/.test/config.yaml --use-conda --show-failed-logs --cores 2 --conda-cleanup-pkgs cache --latency-wait 150"

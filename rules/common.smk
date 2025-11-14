@@ -39,12 +39,12 @@ if "samplesheet" in config and config["samplesheet"]:
 else:
     SAMPLES = config["samples"]
     SAMPLE_TO_FASTQ = {
-        s: [os.path.join(config["data_dir"], f"{s}{config['data_sufix']}")]
+        s: [f"{config['data_dir']}{s}{config['data_suffix']}"]
         for s in SAMPLES
     }
 
 def get_final_output():
-    rule_all_input_list=["versions.txt","operon-finder",
+    rule_all_input_list=["logs/versions.txt","gamba",
         expand("logs/{sample}_stats_input_reads.txt", sample=SAMPLES),
         expand("alignments/{specie}/{specie}_{sample}_reads_aln_v{intron}.sorted.bam", specie=config["specie"], sample=SAMPLES, intron=config["minimap2_max_intron"]),
         expand("alignments/{specie}/{specie}_{sample}_reads_aln_sorted_v{intron}.stats.txt", specie=config["specie"], sample=SAMPLES, intron=config["minimap2_max_intron"]),

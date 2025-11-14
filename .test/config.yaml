@@ -3,16 +3,16 @@
 # Threads:
 threads: 4
 # ABSOLUTE path to working directory (IMPORTAT to include last "/"):
-#workdir_top: ".test/"
+workdir_top: "/github/workspace/.test/"
 # Name of the Results folder inside the working directory (IMPORTAT to include last "/"):
-pipeline: ".test/Test_run/"
+pipeline: "Test_run/"
 # Here the '.snakemake' folder containing the conda environments will be created
 # together with all teh result files and folders. 
 
 ### Pipeline-specific parameters:
 # SAMPLES
 #You can use give a samplesheet in TSV format with two columns: SampleID absolute_path/File.fastq
-samplesheet: ".test/Samples.tsv"
+samplesheet: "/github/workspace/.test/Samples.tsv"
 #Other option is to give the fastq files as a combination of: {data_dir}{samples}{data_sufix}
 #This is useful for samples with highly similar names with just diffrent ID.
 #{data_dir} need to be the absolute path to the directory
@@ -24,11 +24,11 @@ samplesheet: ".test/Samples.tsv"
 # Specie name, it will be use for naming output files
 specie: ["CORAL"]
 # Input genome
-genome_fasta: ".test/data/genome.fa"
+genome_fasta: "/github/workspace/.test/data/genome.fa.gz"
 # Run a Gffcomapre with the reference?
 run_gffcomapre: True
 # Absolute path to reference annotation (optional)
-reference_annot: ".test/data/ref_annotation.gtf"
+reference_annot: "/github/workspace/.test/data/ref_annotation.gtf"
 # Minimap2 options when generating index
 minimap_index_opts: "-k14"
 

@@ -1,11 +1,11 @@
 # CORAL: Compact-genome Oriented RNA-based Annotation using Long reads
 
-[![Snakemake](https://img.shields.io/badge/snakemake-≥5.24.1-brightgreen.svg?style=flat)](https://snakemake.readthedocs.io)
+[![Snakemake](https://img.shields.io/badge/snakemake-≥5.24.1-brightgreen.svg?style=flat)](https://snakemake.readthedocs.io) [![Tests](https://github.com/EvoDevoGenomics-UB/CORAL/actions/workflows/main.yml/badge.svg)](https://github.com/EvoDevoGenomics-UB/CORAL/actions/workflows/main.yml)
 
 The CORAL protocol is a snakemake workflow design to <b>annotate compact genomes</b> using <b>long-read RNAseq data</b>.
 
 It uses as **input** clean (primer-trimmed) pre-processed FASTQ files, mapping them to the provided genome using _Minimap2_.
-Then, it creates non-assembled annotations for each FASTQ file using <i>StringTie v3.0.2</i> and identifies potential operons within those annotations (implementing <i>GAMBA v2.0</i>).
+Then, it creates non-assembled annotations for each FASTQ file using <i>StringTie v3.0.2</i> and identifies potential operons within those annotations (implementing [_GAMBA v2.0_](https://github.com/nurie05/gamba-tool)).
 
 After identifying operon transcripts, operon-contained transcripts, and non-operon-related transcripts, CORAL generates consensus annotations for each of the three sets. These sets are then merged (using <i>StringTie v3.0.1</i>) to generate two final consensus annotations:
 * **Merge clean_andOPRNs GTF**: contains all three transcripts sets
