@@ -77,7 +77,8 @@ rule run_busco_reference_annot:
     shell:""" (
         mkdir -p busco_analysis
         gffread -g {input.genome} -w {output.fasta} {input.ref_annot}
-        busco -i {output.fasta} -l {input.lin_dir} -o {output.out_ref} -m transcriptome ) 2> {log}
+        seqkit stats {output.fasta}
+        busco -i {output.fasta} -l {input.lin_dir} -o {output.out_ref} -m transcriptome ) 2>&1 | tee {log}
     """
 
 busco_ref_input=[]
