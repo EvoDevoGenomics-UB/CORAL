@@ -1,12 +1,17 @@
 #Rust tool GAMBA
 rule build_GAMBA:
-    output: "scripts/gamba-tool/target/release/gamba"
+    output: "gamba"
+    params:
+        snakedir = SNAKEDIR,
+        workdir = WORKDIR
     conda: env_file
     log: "logs/log_build_GAMBA.log"
     shell: """
-    (cd scripts/gamba-tool
+    (cd {params.snakedir}/scripts/gamba-tool
     cargo build --release
-    ./{output} --help ) 2>&1 | tee {log}
+    cd {params.workdir}
+    cp -r {params.snakedir}/scripts/gamba-tool/target/release/{output} {params.workdir}
+    {params.workdir}/{output} --help ) 2>&1 | tee {log}
     """
 
 rule run_GAMBA_and_sanatizing:
