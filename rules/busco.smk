@@ -3,7 +3,7 @@ rule check_genome_format:
     input:
         genome = in_genome
     output:
-        genome = tmp("{specie}_genome.fasta")
+        genome = temp("{specie}_genome.fasta")
     params:
     conda: env_file
     log: "logs/log_{specie}_genome_format.log"
