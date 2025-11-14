@@ -10,11 +10,10 @@ rule build_GAMBA:
     (pwd
     cd {params.snakedir}/scripts/gamba-tool
     cargo build --release
-    pwd
     cd {params.workdir}
-    pwd
     cp -r {params.snakedir}/scripts/gamba-tool/target/release/{output} {params.workdir}
-    {params.workdir}/{output} --help ) 2>&1 | tee {log}
+    pwd
+    ./{output} --help ) 2>&1 | tee {log}
     """
 
 rule run_GAMBA_and_sanatizing:
