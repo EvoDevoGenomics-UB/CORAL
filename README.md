@@ -25,6 +25,10 @@ However, due to the presence of a submodule we recommend downloading it using:
 
     git clone --recursive https://github.com/EvoDevoGenomics-UB/CORAL.git
 
+Or if your <code>git</code> version is >2.13:
+
+    git clone --recurse-submodules https://github.com/EvoDevoGenomics-UB/CORAL.git
+
 ## How to run
 
 To run **CORAL**, simply modify the <code>CORAL-config.yaml</code> file with your desired parameters and execute it as any other _Snakemake_ workflow. We recommend running it with <code>--use-conda</code>, which will automatically create an environment to install all the dependecies specified in the <code>CORAL-env.yml</code> and <code>CORAL-env.merge.yml</code> files. Example command:

@@ -129,7 +129,7 @@ rule run_final_annotation:
 
     (cat {input.oprnsgtf} {output.noOPRNs} > {output.andOPRNs}.1.tmp ; \
     gffread --sort-alpha -F -T -o {output.andOPRNs}.2.tmp {output.andOPRNs}.1.tmp ; 
-    {params.snakedir}/scripts/add_operonID.py -f {output.andOPRNs}.2.tmp -o {output.andOPRNs} --log {output.andOPRNs}.log
+    python {params.snakedir}/scripts/add_operonID.py -f {output.andOPRNs}.2.tmp -o {output.andOPRNs} --log {output.andOPRNs}.log
     rm {output.andOPRNs}*.OPRNids.db {output.andOPRNs}*.tmp
 
     echo "  Final CLEAN-andOPRNs done"
