@@ -74,21 +74,21 @@ rule run_gCLEAN_annotation:
     conda: env_file
     log: "logs/{specie}/log_StrignTie_merge_opCLEAN_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
     shell:"""
-    ((for i in {input.gtfsclean} ; do echo $i ; done ) > annotations/{wildcards.specie}/List_merge_opCLEAN.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt ; \
+    var_name="{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}"
+    ((for i in {input.gtfsclean} ; do echo $i ; done ) > annotations/{wildcards.specie}/List_merge_opCLEAN.$var_name.txt ; \
     stringtie --version
 
-    stringtie --merge annotations/{wildcards.specie}/List_merge_opCLEAN.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt \
-     -l g -f {params.freq} {params.opts} -g {params.g_param} \
-     -o GTFfile.tmp ; \
+    stringtie --merge annotations/{wildcards.specie}/List_merge_opCLEAN.$var_name.txt \
+     -l g -f {params.freq} {params.opts} -g {params.g_param} -o GTFfile.$var_name.tmp ; \
     
     if [ $(grep 'StringTie	transcript' {input.oprngtf} | wc -l ) -ge 1 ] ; then
-        gffcompare -r {input.oprngtf} GTFfile.tmp -o filter
-        awk '{{if($3=="=" ) print $5}}' filter.GTFfile.tmp.tmap > filter.list.tmp
-        gffread --nids filter.list.tmp GTFfile.tmp -o {output.cleanfinal}
+        gffcompare -r {input.oprngtf} GTFfile.$var_name.tmp -o filter_$var_name
+        awk '{{if($3=="=" ) print $5}}' filter_$var_name.GTFfile.$var_name.tmp.tmap > filter.$var_name.list.tmp
+        gffread --nids filter.$var_name.list.tmp GTFfile.$var_name.tmp -o {output.cleanfinal}
     else
-        cp GTFfile.tmp {output.cleanfinal}
+        cp GTFfile.$var_name.tmp {output.cleanfinal}
     fi
-    rm filter.* ; rm GTFfile.tmp ;
+    rm filter.*${{var_name}}* ; rm GTFfile.$var_name.tmp ;
 
     echo "  Final merge CLEAN done" ; \
     grep 'StringTie	transcript' {output.cleanfinal} | wc -l ) 2>&1 | tee {log}
