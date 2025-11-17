@@ -1,8 +1,22 @@
 ## Alignments of the reads by minimap2 & samtools
+rule check_genome_format:
+    input:
+        genome = in_genome
+    output:
+        genome = temp("index/{specie}_genome.fasta")
+    conda: env_file
+    log: "logs/log_{specie}_genome_format.log"
+    shell:"""
+    (if ls {input.genome} | grep -q '.gz' ; then
+        seqkit seq {input.genome} -o {output.genome}
+    else
+        ln -sf {input.genome} {output.genome} 
+    fi ) 2> {log}
+    """
 
 rule build_minimap_index:
     input:
-        genome = in_genome
+        genome = rules.check_genome_format.output.genome
     output:
         index = "index/{specie}_genome_index.mmi"
     params:

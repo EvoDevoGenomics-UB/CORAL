@@ -4,18 +4,18 @@
 
 The CORAL protocol is a snakemake workflow design to <b>annotate compact genomes</b> using <b>long-read RNAseq data</b>.
 
-It uses as **input** clean (primer-trimmed) pre-processed FASTQ files, mapping them to the provided genome using _Minimap2_.
-Then, it creates non-assembled annotations for each FASTQ file using <i>StringTie v3.0.2</i> and identifies potential operons within those annotations (implementing [_GAMBA v2.0_](https://github.com/nurie05/gamba-tool)).
+It uses as **input** clean (primer-trimmed) pre-processed FASTQ files, mapping them to the provided genome using [_Minimap2_](https://github.com/lh3/minimap2).
+Then, it creates non-assembled annotations for each FASTQ file (using [_StringTie_](https://github.com/gpertea/stringtie) ) and **identifies potential operons** within those annotations by implementing [_GAMBA_](https://github.com/nurie05/gamba-tool).
 
-After identifying operon transcripts, operon-contained transcripts, and non-operon-related transcripts, CORAL generates consensus annotations for each of the three sets. These sets are then merged (using <i>StringTie v3.0.1</i>) to generate two final consensus annotations:
-* **Merge clean_andOPRNs GTF**: contains all three transcripts sets
+After identifying operon transcripts, operon-contained transcripts, and non-operon-related transcripts, CORAL generates consensus annotations for each of the three sets. These sets are then merged (using _StringTie_) to generate two final consensus annotations:
+* **Merge clean_andOPRNs GTF**: contains all three transcripts sets.
 * **Merge clean_noOPRNs GTF**: includes only operon-contained transcripts and non-operon-related transcripts.
 
-The quality of the annotation is assayed with <i>BUSCO (v5.8)</i>, and optionally with _Gffcompare_ when a reference annotation is provided. Finally, CORAL can generate an expression matrix for the consensus annotation including all the transcript sets (Merge clean_andOPRNs GTF), when specified in the configuration file.
+The quality of the annotation is assayed with [_BUSCO_](https://gitlab.com/ezlab/busco), and optionally with [_Gffcompare_](https://github.com/gpertea/gffcompare) when a reference annotation is provided. Finally, CORAL can generate an expression matrix for the consensus annotation including all the transcript sets (Merge clean_andOPRNs GTF), when specified in the configuration file.
 
 Schematic pipeline:
 
-<img width="1795" height="2641" alt="Figure1_new_v2" src="https://github.com/user-attachments/assets/77123e49-5271-44e6-862b-b27d4225398f" />
+<img width="795" height="1641" alt="Figure1_new_v2" src="https://github.com/user-attachments/assets/77123e49-5271-44e6-862b-b27d4225398f" />
 
 ## Installation
 This pipeline is build on _Snakemake_; therefore, you need to have _Snakemake_ installed (tested on v5.24.1).
@@ -25,9 +25,13 @@ However, due to the presence of a submodule we recommend downloading it using:
 
     git clone --recursive https://github.com/EvoDevoGenomics-UB/CORAL.git
 
+Or if your <code>git</code> version is >2.13:
+
+    git clone --recurse-submodules https://github.com/EvoDevoGenomics-UB/CORAL.git
+
 ## How to run
 
-To run **CORAL**, simply modify the <code>CORAL-config.yaml</code> file with your desired parameters and execute it as any other _Snakemake_ workflow. We recommend running it with <code>--use-conda</code>, which will automatically create an environment to install all the dependecies specified in the <code>CORAL-env.yml</code> and <code>CORAL-env.merge.yml</code> files. Example command:
+To run **CORAL**, simply modify the <code>CORAL-config.yaml</code> file with your desired parameters and execute it as any other _Snakemake_ workflow. We recommend running it with <code>--use-conda</code>, which will automatically create an environment to install all the dependecies specified in the <code>CORAL-env.yml</code> file. Example command:
 
     snakemake --use-conda --snakefile Snakefile --configfile CORAL-config.yaml --cores 4
 

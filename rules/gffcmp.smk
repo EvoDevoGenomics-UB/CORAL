@@ -4,8 +4,8 @@ rule run_gffcompare:
     input:
         ref = REF ,
         gtf_longest = rules.run_longest_trans_filter.output.filtergtf ,
-        gtf_noOPRNs = rules.run_final_annotation_part1.output.noOPRNs ,
-        gtf_andOPRNs = rules.run_final_annotation_part2.output.andOPRNs
+        gtf_noOPRNs = rules.run_final_annotation.output.noOPRNs ,
+        gtf_andOPRNs = rules.run_final_annotation.output.andOPRNs
     output:
         gffcmp_dir = directory("Gffcompare_results/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}")
     params:
