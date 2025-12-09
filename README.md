@@ -1,6 +1,6 @@
 # CORAL: Compact-genome Oriented RNA-based Annotation using Long reads
 
-[![Snakemake](https://img.shields.io/badge/snakemake-≥5.24.1-brightgreen.svg?style=flat)](https://snakemake.readthedocs.io) [![Tests](https://github.com/EvoDevoGenomics-UB/CORAL/actions/workflows/main.yml/badge.svg)](https://github.com/EvoDevoGenomics-UB/CORAL/actions/workflows/main.yml)
+[![Snakemake](https://img.shields.io/badge/snakemake-≥5.24.1-brightgreen.svg?style=flat)](https://snakemake.readthedocs.io) [![Tests](https://github.com/EvoDevoGenomics-UB/CORAL/actions/workflows/main.yml/badge.svg)](https://github.com/EvoDevoGenomics-UB/CORAL/actions/workflows/main.yml) [![DOI:10.64898/2025.12.04.692336](http://img.shields.io/badge/DOI-10.64898/2025.12.04.692336-B31B1B.svg)](https://doi.org/10.64898/2025.12.04.692336)
 
 The CORAL protocol is a snakemake workflow design to <b>annotate compact genomes</b> using <b>long-read RNAseq data</b>.
 
@@ -15,7 +15,7 @@ The quality of the annotation is assayed with [_BUSCO_](https://gitlab.com/ezlab
 
 Schematic pipeline:
 
-<img width="795" height="1641" alt="Figure1_new_v2" src="https://github.com/user-attachments/assets/77123e49-5271-44e6-862b-b27d4225398f" />
+<img width="795" height="1641" alt="Figure1_new_v3_DEF" src="https://github.com/user-attachments/assets/920a9be0-2caa-409f-919a-806d14aae927" />
 
 ## Installation
 This pipeline is build on _Snakemake_; therefore, you need to have _Snakemake_ installed (tested on v5.24.1).
@@ -95,3 +95,9 @@ There is the posibility to run specific parts of CORAL instead of the full workf
 To run any of those parts just run snakemake specifying the rule name. Example:
 
     snakemake --use-conda --snakefile Snakefile --configfile CORAL-config.yaml --cores 4 do_alignment
+
+## Citation
+
+If you use CORAL in your research, please cite the following publication:
+
+- NTorres-Aguila, N.P., Cassà, B., and Canestro, C. (2025). <b>CORAL: Accurate annotation of compact genomes using long-read RNA-seq, demonstrated in _Oikopleura dioica_</b>. bioRxiv. [DOI: 10.64898/2025.12.04.692336](https://doi.org/10.64898/2025.12.04.692336)
