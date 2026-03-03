@@ -1,11 +1,11 @@
 ## Expression matrix creation
 rule run_expression_matrix:
     input:
-        gtf = rules.run_final_annotation.output.andOPRNs ,
+        gtf = rules.run_gffcompare.output.gffcmp_out ,
         bams = expand("alignments/{{specie}}/{{specie}}_{sample}_reads_aln_v{{intron}}.sorted.bam", sample=SAMPLES)
     output:
-        out_file_g = "Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-andOPRNs/gene_count_matrix.csv",
-        out_file_t = "Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-andOPRNs/transcript_count_matrix.csv"
+        out_file_g = "Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNs.annotated/gene_count_matrix.csv",
+        out_file_t = "Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNs.annotated/transcript_count_matrix.csv"
     params:
         result_dir = lambda wildcards, output: os.path.dirname(os.path.dirname(output[0])),
         samples = config["samples"],

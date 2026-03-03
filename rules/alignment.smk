@@ -33,24 +33,55 @@ rule prepare_fastqs:
     input:
         fastq = lambda wc: SAMPLE_TO_FASTQ[wc.sample]
     output:
-        fq = temp("tmp/{sample}_concatenated.fastq")
+        fq = temp("tmp/{sample}_concatenated.fastq"),
+        flq = "processed_reads/{sample}_full_length_reads.clean.fq"
+    params:
+        pc = config["run_pychopper"],
+        pc_opts = config["pychopper_opts"],
+        seqkitQ = config["seqkitQ"],
+        min_seqkit = config["min_seqkit"]
     conda: env_file
-    log: "logs/log_prepare_fastqs_{sample}.log"
+    log:
+        log1 = "logs/log_prepare_fastqs_{sample}.log",
+        log2 = "logs/{sample}_pychopper_log.txt"
     shell: """
-    (mkdir -p tmp
-    if [ $(echo {input} | wc -w) -ge 2 ]; then
-        echo "Concatenating FASTQ files for {wildcards.sample}..."
-        seqkit seq {input} > {output.fq}
+    (
+    mkdir -p tmp
+    mkdir -p processed_reads
+    if [ -s {output.flq} ] ; then 
+        echo "{output.flq} already exists, skiped..."
     else
-        echo "Single FASTQ for {wildcards.sample}, copying..."
-        ln -sf {input} {output.fq}
-    fi ) 2> {log}
+        if [ $(echo {input} | wc -w) -ge 2 ]; then
+            echo "Concatenating FASTQ files for {wildcards.sample}..."
+            seqkit seq {input} -m 50 -o {output.fq}
+        else
+            echo "Single FASTQ for {wildcards.sample}, copying..."
+            #ln -sf {input} {output.fq}
+            seqkit seq {input} -m 50 -o {output.fq}
+        fi 
+        if [[ "{params.pc}" == "True" ]]; then
+            echo "Performing pychopper of {wildcards.sample}..."
+            mkdir -p processed_reads/Reports/
+            ( head -3 {output.fq} ; \
+            pychopper -r processed_reads/Reports/{wildcards.sample}_report.pdf \
+            -S processed_reads/Reports/{wildcards.sample}_statistics.tsv \
+            -u processed_reads/{wildcards.sample}_unclassified.fq \
+            -w processed_reads/{wildcards.sample}_rescued.fq \
+            {params.pc_opts} {output.fq} processed_reads/{wildcards.sample}_full_length_reads.fq \
+            ) 2> {log.log2}
+            seqkit seq -Q {params.seqkitQ} -m {params.min_seqkit} \
+            processed_reads/{wildcards.sample}_full_length_reads.fq > {output.flq}
+            gzip processed_reads/{wildcards.sample}_full_length_reads.fq
+        else
+            seqkit seq -Q {params.seqkitQ} -m {params.min_seqkit} {output.fq} > {output.flq}
+        fi
+    fi ) 2> {log.log1}
     """
 
 rule run_minimap2:
     input:
         index = rules.build_minimap_index.output,
-        fastq = rules.prepare_fastqs.output.fq
+        fastq = rules.prepare_fastqs.output.flq
     output:
         sam = temp("alignments/{specie}/{specie}_{sample}_reads_aln_v{intron}.sam")
     params:

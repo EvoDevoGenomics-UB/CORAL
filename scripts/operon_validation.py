@@ -206,13 +206,15 @@ with open(operon_gtf_file, "w") as operon_out:
         # Write the transcript feature
         if trans_gene_id in gene_to_operon:
             op_id = gene_to_operon[trans_gene_id]
-            new_attrs = f' operon_id "{op_id}";'
+            new_attrs = f'; operon_id "{op_id}";'
         else:
             new_attrs = ""
-        operon_out.write(str(trans_feature).replace('""', '"').replace('";"', '";') + new_attrs + "\n")
+        #operon_out.write(str(trans_feature).replace('""', '"').replace('";"', '";') + new_attrs + "\n")
+        operon_out.write((str(trans_feature) + new_attrs + "\n").replace(';;', ';'))
         # Write its child features (e.g., exons)
         for feature in db.children(trans_id, featuretype='exon', order_by='start'):
-            operon_out.write(str(feature).replace('""', '') + "\n")
+            #operon_out.write(str(feature).replace('""', '') + "\n")
+            operon_out.write((str(feature) + ";\n").replace('""', '"').replace('";"', '";'))
 
 # Define output GTF filenames
 opg_gtf_file = out_prefix + "_OPRNvalidation.OpGclean.gtf"
@@ -224,14 +226,16 @@ with open(opg_gtf_file, "w") as opg_out:
         # Write the transcript feature
         if trans_gene_id in gene_to_operon:
             op_id = gene_to_operon[trans_gene_id]
-            new_attrs = f' operon_id "{op_id}";'
+            new_attrs = f'; operon_id "{op_id}";'
         else:
             new_attrs = ""
         # Write the transcript feature
-        opg_out.write(str(trans_feature).replace('""', '"').replace('";"', '";') + new_attrs + "\n")
+        #opg_out.write(str(trans_feature).replace('""', '"').replace('";"', '";') + new_attrs + "\n")
+        opg_out.write((str(trans_feature) + new_attrs + "\n").replace(';;', ';'))
         # Write its child features (e.g., exons)
         for feature in db.children(trans_id, featuretype='exon', order_by='start'):
-            opg_out.write(str(feature).replace('""', '') + "\n")
+            #opg_out.write(str(feature).replace('""', '') + "\n")
+            opg_out.write((str(feature) + ";\n").replace('""', '"').replace('";"', '";').replace(';;', ';'))
 
 # Define output GTF filenames
 op_gtf_file = out_prefix + "_OPRNvalidation.OPRNclean.gtf"
@@ -244,14 +248,16 @@ with open(op_gtf_file, "w") as op_out:
             # Write the transcript feature
             if trans_gene_id in gene_to_operon:
                 op_id = gene_to_operon[trans_gene_id]
-                new_attrs = f' operon_id "{op_id}";'
+                new_attrs = f'; operon_id "{op_id}";'
             else:
                 new_attrs = ""
             # Write the transcript feature
-            op_out.write(str(trans_feature).replace('""', '"').replace('";"', '";') + new_attrs + "\n")
+            #op_out.write(str(trans_feature).replace('""', '"').replace('";"', '";') + new_attrs + "\n")
+            op_out.write((str(trans_feature) + new_attrs + "\n").replace(';;', ';'))
             # Write its child features (e.g., exons)
             for feature in db.children(trans_id, featuretype='exon', order_by='start'):
-                op_out.write(str(feature).replace('""', '') + "\n")
+                #op_out.write(str(feature).replace('""', '') + "\n")
+                op_out.write((str(feature) + ";\n").replace('""', '"').replace('";"', '";').replace(';;', ';'))
 
 
 # Define output GTF filenames
@@ -261,10 +267,12 @@ with open(excuded_gtf_file, "w") as excluded_out:
     for trans_id in removed_trans_ids:
         trans_feature = db[trans_id]
         # Write the transcript feature
-        excluded_out.write(str(trans_feature).replace('""', '"').replace('";"', '";') + ";\n")
+        #excluded_out.write(str(trans_feature).replace('""', '"').replace('";"', '";') + ";\n")
+        excluded_out.write(str(trans_feature) + ";\n")
         # Write its child features (e.g., exons)
         for feature in db.children(trans_id, featuretype='exon', order_by='start'):
-            excluded_out.write(str(feature).replace('""', '') + "\n")
+            #excluded_out.write(str(feature).replace('""', '') + "\n")
+            excluded_out.write((str(feature) + ";\n").replace('""', '"').replace('";"', '";').replace(';;', ';'))
 
 ################
 # Counting the number of genes by operon

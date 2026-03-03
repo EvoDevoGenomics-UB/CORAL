@@ -163,10 +163,10 @@ with open(output_file, "w") as gtf_out:
         # Write the transcript feature
         if trans_gene_id in gene_to_operon:
             op_id = gene_to_operon[trans_gene_id]
-            new_attrs = f' operon_id "{op_id}";'
+            new_attrs = f'; operon_id "{op_id}";'
         else:
             new_attrs = ""
-        gtf_out.write(str(trans_feature).replace('""', '"').replace('";"', '";') + new_attrs + "\n")
+        gtf_out.write((str(trans_feature) + new_attrs + "\n").replace('";"', '";'))
         # Write its child features (e.g., exons)
         for feature in db.children(trans_id, featuretype='exon', order_by='start'):
-            gtf_out.write(str(feature).replace('""', '') + "\n")
+            gtf_out.write((str(feature) + "\n").replace('";"', '";'))

@@ -84,11 +84,11 @@ rule run_gCLEAN_annotation:
     if [ $(grep 'StringTie	transcript' {input.oprngtf} | wc -l ) -ge 1 ] ; then
         gffcompare -r {input.oprngtf} GTFfile.$var_name.tmp -o filter_$var_name
         awk '{{if($3=="=" ) print $5}}' filter_$var_name.GTFfile.$var_name.tmp.tmap > filter.$var_name.list.tmp
-        gffread --nids filter.$var_name.list.tmp GTFfile.$var_name.tmp -o {output.cleanfinal}
+        gffread --nids filter.$var_name.list.tmp GTFfile.$var_name.tmp -T -o {output.cleanfinal}
     else
         cp GTFfile.$var_name.tmp {output.cleanfinal}
     fi
-    rm filter.*${{var_name}}* ; rm GTFfile.$var_name.tmp ;
+    rm filter*${{var_name}}* ; rm GTFfile.$var_name.tmp ;
 
     echo "  Final merge CLEAN done" ; \
     grep 'StringTie	transcript' {output.cleanfinal} | wc -l ) 2>&1 | tee {log}

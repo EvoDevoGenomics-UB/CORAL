@@ -7,7 +7,8 @@ rule run_gffcompare:
         gtf_noOPRNs = rules.run_final_annotation.output.noOPRNs ,
         gtf_andOPRNs = rules.run_final_annotation.output.andOPRNs
     output:
-        gffcmp_dir = directory("Gffcompare_results/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}")
+        gffcmp_dir = directory("Gffcompare_results/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}"),
+        gffcmp_out = "Gffcompare_results/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNs.annotated.gtf"
     params:
         prefix = "{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}"
     conda: env_file
@@ -30,5 +31,6 @@ rule run_gffcompare:
             done) > $i.gffcmp_trans_types.txt
             echo "File '$i.gffcmp_trans_types.txt' created."
         done
+        touch -c {output.gffcmp_out}
     fi ) 2>&1 | tee {log}
     """
