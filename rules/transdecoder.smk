@@ -1,8 +1,8 @@
 rule mmseqs2_databases:
     output:
         db_dir = directory("TD2_results/mmseq2_DBs/"),
-        swissprot = "TD2_results/mmseq2_DBs/swissprot" #,
-        #eggnog = "TD2_results/mmseq2_DBs/eggnog"
+        swissprot = "TD2_results/mmseq2_DBs/swissprot",
+        eggnog = "TD2_results/mmseq2_DBs/eggnog"
     conda: env_file
     log: "logs/log_mmseq2_DBs.log"
     shell: """
@@ -14,12 +14,12 @@ rule mmseqs2_databases:
         echo "Database swissprot already exists, skipping download..." >&2
     else
         mmseqs databases UniProtKB/Swiss-Prot {output.swissprot} tmp
-    #fi
-    #if [[ -f {output.eggnog} ]] ;  then
-    #    echo "Database eggnog already exists, skipping download..."
-    #    echo "Database eggnog already exists, skipping download..." >&2
-    #else
-    #    mmseqs databases eggNOG {output.eggnog} tmp
+    fi
+    if [[ -f {output.eggnog} ]] ;  then
+        echo "Database eggnog already exists, skipping download..."
+        echo "Database eggnog already exists, skipping download..." >&2
+    else
+        mmseqs databases eggNOG {output.eggnog} tmp
     fi ) 2> {log}
     """
 
