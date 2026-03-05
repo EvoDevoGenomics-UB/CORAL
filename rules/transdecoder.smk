@@ -1,8 +1,7 @@
 rule mmseqs2_databases:
     output:
         db_dir = directory("TD2_results/mmseq2_DBs/"),
-        swissprot = "TD2_results/mmseq2_DBs/swissprot",
-        eggnog = "TD2_results/mmseq2_DBs/eggnog"
+        swissprot = "TD2_results/mmseq2_DBs/swissprot"
     conda: env_file
     log: "logs/log_mmseq2_DBs.log"
     shell: """
@@ -14,30 +13,28 @@ rule mmseqs2_databases:
         echo "Database swissprot already exists, skipping download..." >&2
     else
         mmseqs databases UniProtKB/Swiss-Prot {output.swissprot} tmp
-    fi
-    if [[ -f {output.eggnog} ]] ;  then
-        echo "Database eggnog already exists, skipping download..."
-        echo "Database eggnog already exists, skipping download..." >&2
-    else
-        mmseqs databases eggNOG {output.eggnog} tmp
     fi ) 2> {log}
     """
 
 rule TransDecoder:
     input:
-        genome = in_genome,
+        genome = rules.check_genome_format.output.genome,
         gtf = rules.run_final_annotation.output.noOPRNs,
-        #eggnog = rules.mmseqs2_databases.output.eggnog,
         swissprot = rules.mmseqs2_databases.output.swissprot
     output:
-        outdir = directory("TD2_results/{specie}/{specie}_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs_files"),
-        gff3 = "TD2_results/{specie}/{specie}_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.fasta.TD2.genome.gff3"
+        outdir = directory("TD2_results/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs_files"),
+        gff3 = "TD2_results/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.fasta.TD2.genome.gff3"
+    params:
+        snakedir = SNAKEDIR
     conda: env_file
     log: "logs/log_TD2_{specie}_guide{ref}_v{intron}_gambat{threshold}.log"
     shell: """
     mkdir -p TD2_results/
     mkdir -p TD2_results/{wildcards.specie}/
-    (./TransDecoder2_script.sh {input.genome} {input.gtf} "TD2_results/{wildcards.specie}/" "{input.swissprot}") 2>&1 | tee {log}
+    ( {params.snakedir}/scripts/TransDecoder2_script.sh {input.genome} {input.gtf} \
+    "TD2_results/{wildcards.specie}/" \
+    {input.swissprot} "{params.snakedir}/scripts" \
+    ) 2>&1 | tee {log}
     """
 
 rule run_obtaining_pep_TD2:
@@ -45,7 +42,7 @@ rule run_obtaining_pep_TD2:
         genome = rules.check_genome_format.output.genome,
         gff_TD2 = rules.TransDecoder.output.gff3 
     output:
-        pep_TD2 = "busco_analysis/{specie}/{specie}_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.TD2.pep.fasta"
+        pep_TD2 = "busco_analysis/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.TD2.pep.fasta"
     conda: env_file
     log: "logs/{specie}/log_obtaining_pep_GTFs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
     shell:"""

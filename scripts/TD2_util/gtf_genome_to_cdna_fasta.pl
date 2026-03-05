@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use FindBin;
-use lib ("scripts/PerlLib");
+#use lib ("scripts/PerlLib");
 use Gene_obj;
 use Fasta_reader;
 

@@ -5,7 +5,7 @@ use warnings;
 use Carp;
 
 use FindBin;
-use lib ("scripts/PerlLib");
+#use lib ("scripts/PerlLib");
 use Gene_obj;
 use GFF3_utils2;
 use Data::Dumper;
