@@ -1,8 +1,8 @@
-rule mmseq2_databases:
+rule mmseqs2_databases:
     output:
         db_dir = directory("TD2_results/mmseq2_DBs/"),
-        swissprot = "TD2_results/mmseq2_DBs/swissprot",
-        eggnog = "TD2_results/mmseq2_DBs/eggnog"
+        swissprot = "TD2_results/mmseq2_DBs/swissprot" #,
+        #eggnog = "TD2_results/mmseq2_DBs/eggnog"
     conda: env_file
     log: "logs/log_mmseq2_DBs.log"
     shell: """
@@ -14,12 +14,12 @@ rule mmseq2_databases:
         echo "Database swissprot already exists, skipping download..." >&2
     else
         mmseqs databases UniProtKB/Swiss-Prot {output.swissprot} tmp
-    fi
-    if [[ -f {output.eggnog} ]] ;  then
-        echo "Database eggnog already exists, skipping download..."
-        echo "Database eggnog already exists, skipping download..." >&2
-    else
-        mmseqs databases eggNOG {output.eggnog} tmp
+    #fi
+    #if [[ -f {output.eggnog} ]] ;  then
+    #    echo "Database eggnog already exists, skipping download..."
+    #    echo "Database eggnog already exists, skipping download..." >&2
+    #else
+    #    mmseqs databases eggNOG {output.eggnog} tmp
     fi ) 2> {log}
     """
 
@@ -27,8 +27,8 @@ rule TransDecoder:
     input:
         genome = in_genome,
         gtf = rules.run_final_annotation.output.noOPRNs,
-        swissprot = rules.mmseq2_databases.output.swissprot,
-        eggnog = rules.mmseq2_databases.output.eggnog
+        #eggnog = rules.mmseqs2_databases.output.eggnog,
+        swissprot = rules.mmseqs2_databases.output.swissprot
     output:
         outdir = directory("TD2_results/{specie}/{specie}_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs_files"),
         gff3 = "TD2_results/{specie}/{specie}_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.fasta.TD2.genome.gff3"
@@ -37,7 +37,7 @@ rule TransDecoder:
     shell: """
     mkdir -p TD2_results/
     mkdir -p TD2_results/{wildcards.specie}/
-    (./TransDecoder2_script.sh {input.genome} {input.gtf} "TD2_results/{wildcards.specie}/" "{input.swissprot} {input.eggnog}") 2>&1 | tee {log}
+    (./TransDecoder2_script.sh {input.genome} {input.gtf} "TD2_results/{wildcards.specie}/" "{input.swissprot}") 2>&1 | tee {log}
     """
 
 rule run_obtaining_pep_TD2:

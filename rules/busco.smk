@@ -39,7 +39,8 @@ rule busco_download_lineage:
     conda: env_file
     log: "logs/log_busco_download_lineage.log"
     shell:"""
-        (busco --download {params.lineage} --download_path {output.lin_dir} 
+        ( busco --version
+        busco --download {params.lineage} --download_path {output.lin_dir} 
         ls -l {output.lin_dir} ) 2> {log}
     """
 rule run_busco_analyses:

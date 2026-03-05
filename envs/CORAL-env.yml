@@ -11,10 +11,10 @@ dependencies:
     - seqkit
     - stringtie==3.0.3
     - hmmer
-    - busco==5.8.2
+    - busco==6.0.0
     - pandas
     - gffcompare
     - rust
-    - "nanoporetech::pychopper==2.7.10"
+    - pychopper==2.7.10
     - TD2
     - mmseqs2
