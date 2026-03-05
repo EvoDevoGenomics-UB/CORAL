@@ -46,6 +46,7 @@ rule run_obtaining_pep_TD2:
         gff_TD2 = rules.TransDecoder.output.gff3 
     output:
         pep_TD2 = "busco_analysis/{specie}/{specie}_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.TD2.pep.fasta"
+    conda: env_file
     log: "logs/{specie}/log_obtaining_pep_GTFs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
     shell:"""
     (mkdir -p busco_analysis
@@ -55,14 +56,12 @@ rule run_obtaining_pep_TD2:
 rule run_busco_prot:
     input:
         lin_dir = rules.busco_download_lineage.output.lin_dir ,
-        pep_ref = rules.run_obtaining_pep_REF.output.pep_ref ,
         pep_TD2 = rules.run_obtaining_pep_TD2.output.pep_TD2
     output:
-        out_pep_TD2 = directory("busco_analysis/{specie}/BUSCO_prot_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNs_longest_trans_only")
+        out_pep_TD2 = directory("busco_analysis/{specie}/BUSCO_prot_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNs")
     conda: env_file
     log: "logs/{specie}/log_BUSCO_prot_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
     shell:""" (
-        busco -i {input.pep_ref} -l {input.lin_dir} -o {output.out_pep_ref} -m proteins
         busco -i {input.pep_TD2} -l {input.lin_dir} -o {output.out_pep_TD2} -m proteins) 2> {log}
     """
 
