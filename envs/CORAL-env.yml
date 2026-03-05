@@ -17,4 +17,4 @@ dependencies:
     - rust
     - "nanoporetech::pychopper==2.7.10"
     - TD2
-    - mmseq2
+    - mmseqs2
