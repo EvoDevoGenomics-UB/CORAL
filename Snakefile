@@ -13,6 +13,7 @@ workdir: path.join(config["workdir_top"], config["pipeline"])
 WORKDIR = path.join(config["workdir_top"], config["pipeline"])
 SNAKEDIR = path.dirname(workflow.snakefile)
 env_file = path.join(path.dirname(workflow.snakefile),"envs/CORAL-env.yml")
+#env_file_TD2 = path.join(path.dirname(workflow.snakefile),"envs/CORAL-env_TD2.yml")
 
 in_genome = config["genome_fasta"]
 REF = config["reference_annot"]
