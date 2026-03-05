@@ -10,7 +10,7 @@ rule run_longest_trans_filter:
     log: "logs/{specie}/log_long_trans_filter_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.log"
     shell:"""
     (python {params.snakedir}/scripts/Longest_transcript_filter.py {input.gtf}
-    touch {output.filtergtf} ) 2> {log}
+    touch -c {output.filtergtf} ) 2> {log}
     """
 
 rule run_obtaining_fasta:

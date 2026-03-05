@@ -58,7 +58,10 @@ def get_final_output():
         expand("busco_analysis/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.fasta", specie=config["specie"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("busco_analysis/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-andOPRNs.fasta", specie=config["specie"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("busco_analysis/{specie}/BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_andOPRNs", specie=config["specie"], ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        expand("busco_analysis/{specie}/BUSCO_results_all_summaries_{specie}_guide{ref}_v{intron}_gambat{threshold}", specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"])]
+        expand("busco_analysis/{specie}/BUSCO_results_all_summaries_{specie}_guide{ref}_v{intron}_gambat{threshold}", specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+        expand("TD2_results/{specie}/{specie}_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.fasta.TD2.genome.gff3", specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+        expand("busco_analysis/{specie}/{specie}_LRannot_REF.pep.fasta", specie=config["specie"]),
+        expand("busco_analysis/{specie}/{specie}_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.TD2.pep.fasta",, specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"])]
 
     if config["reference_annot"] not in (None, [], ""):
         rule_all_input_list.append(expand("busco_analysis/{specie}/BUSCO_trans_{specie}_LRannot_REF", specie=config["specie"]))
