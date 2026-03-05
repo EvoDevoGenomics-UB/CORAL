@@ -50,7 +50,7 @@ rule run_obtaining_pep_TD2:
     log: "logs/{specie}/log_obtaining_pep_GTFs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
     shell:"""
     (mkdir -p busco_analysis
-    gffread -g {input.genome} -y {output.pep_TD2} {input.gtf_TD2} ) 2> {log}
+    gffread -g {input.genome} -y {output.pep_TD2} {input.gff_TD2} ) 2> {log}
     """
 
 rule run_busco_prot:
