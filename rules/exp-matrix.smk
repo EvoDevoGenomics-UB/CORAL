@@ -39,7 +39,7 @@ rule run_expression_matrix_REF:
         out_file_g = "Expression_matrix/{specie}/ref_annotation/gene_count_matrix_v{intron}.csv",
         out_file_t = "Expression_matrix/{specie}/ref_annotation/transcript_count_matrix_v{intron}.csv"
     params:
-        snakedir = SCRIPTDIR ,
+        scriptsdir = SCRIPTDIR ,
         result_dir = lambda wildcards, output: os.path.dirname(os.path.dirname(output[0])),
         length = config["length"]
     conda: env_file
