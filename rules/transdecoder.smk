@@ -1,18 +1,21 @@
 rule mmseqs2_databases:
     output:
         db_dir = directory("TD2_results/mmseq2_DBs/"),
-        swissprot = "TD2_results/mmseq2_DBs/swissprot"
+        db_alias = expand("TD2_results/mmseq2_DBs/{db_alias}", db_alias=config["db_alias"])
+    params:
+        db_name = config["db_name"],
+        db_alias = config["db_alias"]
     conda: env_file
     log: "logs/log_mmseq2_DBs.log"
     shell: """
     mkdir -p TD2_results
     mkdir -p {output.db_dir}
 
-    (if [[ -f {output.swissprot} ]] ;  then
-        echo "Database swissprot already exists, skipping download..."
-        echo "Database swissprot already exists, skipping download..." >&2
+    (if [[ -f {output.db_alias} ]] ;  then
+        echo "Database {params.db_alias} already exists, skipping download..."
+        echo "Database {params.db_alias} already exists, skipping download..." >&2
     else
-        mmseqs databases UniProtKB/Swiss-Prot {output.swissprot} tmp
+        mmseqs databases {params.db_name} {output.db_alias} tmp
     fi ) 2> {log}
     """
 
@@ -59,7 +62,7 @@ rule run_busco_prot:
     conda: env_file
     log: "logs/{specie}/log_BUSCO_prot_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
     shell:""" (
-        busco -i {input.pep_TD2} -l {input.lin_dir} -o {output.out_pep_TD2} -m proteins) 2> {log}
+        /Users/nuriat/anaconda3/envs/busco_env/bin/busco -i {input.pep_TD2} -l {input.lin_dir} -o {output.out_pep_TD2} -m proteins) 2> {log}
     """
 
 rule run_busco_prot_ref:
@@ -77,5 +80,5 @@ rule run_busco_prot_ref:
     shell:""" (
         mkdir -p busco_analysis
         gffread -g {input.genome} -y {output.pep_ref} {input.gtf_ref}
-        busco -i {output.pep_ref} -l {input.lin_dir} -o {output.out_ref} -m proteins ) 2>&1 | tee {log}
+        /Users/nuriat/anaconda3/envs/busco_env/bin/busco -i {output.pep_ref} -l {input.lin_dir} -o {output.out_ref} -m proteins ) 2>&1 | tee {log}
     """
