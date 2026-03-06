@@ -31,9 +31,10 @@ rule run_obtaining_fasta:
     gffread -g {input.genome} -w {output.fasta_noOPRNs} {input.gtf_noOPRNs}
     gffread -g {input.genome} -w {output.fasta_andOPRNs} {input.gtf_andORPNs} ) 2> {log}
     """
+
 rule busco_download_lineage:
     output:
-        lin_dir = directory(path.join("busco_downloads/lineages/", config["lineages"]))
+        lin_dir = directory(path.join("busco_downloads/lineages/", config["lineages"])),
         lin_dir_root = "busco_downloads/"
     params:
         lineage = config["lineages"]

@@ -1,4 +1,4 @@
-SNAKEDIR = path.dirname(workflow.snakefile)
+SCRIPTDIR = path.join(SNAKEDIR,"scripts")
 
 ## Expression matrix creation
 rule run_expression_matrix:
@@ -12,7 +12,7 @@ rule run_expression_matrix:
     params:
         result_dir = lambda wildcards, output: os.path.dirname(os.path.dirname(output[0])),
         length = config["length"],
-        snakedir = SNAKEDIR
+        scriptsdir = SCRIPTDIR
     conda: env_file
     log:
         log1 = "logs/{specie}/run_expression_matrix_part1.{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log",
@@ -21,11 +21,11 @@ rule run_expression_matrix:
     shell:"""
     mkdir -p "{params.result_dir}"
     
-    samplelist=$(python {params.snakedir}/scripts/StringTie_counts.py \
+    samplelist=$(python {params.scriptsdir}/StringTie_counts.py \
      -f {input.gtf} -b {input.bams} --outdir {params.result_dir} -t {threads}  --log {log.log1})
 
     ( echo "Create final matrix with all counts"
-    python {params.snakedir}/scripts/prepDE.py3 -l "{params.length}" -i "$samplelist" -g {output.out_file_g} -t {output.out_file_t} 
+    python {params.scriptsdir}/prepDE.py3 -l "{params.length}" -i "$samplelist" -g {output.out_file_g} -t {output.out_file_t} 
     [[ -f {output.out_file_t} ]] && echo "Expression matrix created succsesfully!" ) 2>&1 | tee {log.log2}
     """
 
@@ -39,7 +39,7 @@ rule run_expression_matrix_REF:
         out_file_g = "Expression_matrix/{specie}/ref_annotation/gene_count_matrix_v{intron}.csv",
         out_file_t = "Expression_matrix/{specie}/ref_annotation/transcript_count_matrix_v{intron}.csv"
     params:
-        snakedir = SNAKEDIR ,
+        snakedir = SCRIPTDIR ,
         result_dir = lambda wildcards, output: os.path.dirname(os.path.dirname(output[0])),
         length = config["length"]
     conda: env_file
@@ -50,10 +50,10 @@ rule run_expression_matrix_REF:
     shell:"""
     mkdir -p "{params.result_dir}"
     
-    samplelist=$(python {params.snakedir}/scripts/StringTie_counts.py \
+    samplelist=$(python {params.scriptsdir}/StringTie_counts.py \
      -f {input.gtf} -b {input.bams} --outdir {params.result_dir} -t {threads}  --log {log.log1})
 
     ( echo "Create final matrix with all counts"
-    python {params.snakedir}/scripts/prepDE.py3 -l "{params.length}" -i "$samplelist" -g {output.out_file_g} -t {output.out_file_t} 
+    python {params.scriptsdir}/prepDE.py3 -l "{params.length}" -i "$samplelist" -g {output.out_file_g} -t {output.out_file_t} 
     [[ -f {output.out_file_t} ]] && echo "Expression matrix created succsesfully!" ) 2>&1 | tee {log.log2}
     """

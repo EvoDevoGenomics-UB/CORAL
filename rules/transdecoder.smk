@@ -23,7 +23,7 @@ rule TransDecoder:
     input:
         genome = rules.check_genome_format.output.genome,
         gtf = rules.run_final_annotation.output.noOPRNs,
-        swissprot = rules.mmseqs2_databases.output.swissprot
+        db_alias = rules.mmseqs2_databases.output.db_alias
     output:
         outdir = directory("TD2_results/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs_files"),
         gff3 = "TD2_results/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.fasta.TD2.genome.gff3"
@@ -36,7 +36,7 @@ rule TransDecoder:
     mkdir -p TD2_results/{wildcards.specie}/
     ( {params.snakedir}/scripts/TransDecoder2_script.sh {input.genome} {input.gtf} \
     "TD2_results/{wildcards.specie}/" \
-    {input.swissprot} "{params.snakedir}/scripts" \
+    {input.db_alias} "{params.snakedir}/scripts" \
     ) 2>&1 | tee {log}
     """
 
