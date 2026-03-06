@@ -34,14 +34,15 @@ rule run_obtaining_fasta:
 rule busco_download_lineage:
     output:
         lin_dir = directory(path.join("busco_downloads/lineages/", config["lineages"]))
+        lin_dir_root = "busco_downloads/"
     params:
         lineage = config["lineages"]
     conda: env_file
     log: "logs/log_busco_download_lineage.log"
     shell:"""
-        ( busco --version
-        busco --download {params.lineage} --download_path {output.lin_dir} 
-        ls -l {output.lin_dir} ) 2> {log}
+        (
+        busco --download {params.lineage} --download_path {output.lin_dir_root}
+        ls -l {output.lin_dir} )  2>&1 | tee {log}
     """
 rule run_busco_analyses:
     input:
