@@ -11,7 +11,8 @@ dependencies:
     - seqkit
     - stringtie==3.0.3
     - hmmer
-    - busco==5.8.3
+    - busco==6.0.0
+    - sepp==4.5.6
     - pandas
     - gffcompare
     - rust

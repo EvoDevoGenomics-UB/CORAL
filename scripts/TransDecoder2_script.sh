@@ -7,9 +7,9 @@ NAME=$(basename $2 .gtf)
 DIR=$3
 DIRSCRIPTS=$5
 
-perl -I/$DIRSCRIPTS/PerlLib $DIRSCRIPTS/TD2_util/gtf_genome_to_cdna_fasta.pl $GTF $GENOME > ${DIR}$NAME.fasta 
+perl -I$DIRSCRIPTS/PerlLib $DIRSCRIPTS/TD2_util/gtf_genome_to_cdna_fasta.pl $GTF $GENOME > ${DIR}$NAME.fasta 
 
-perl -I/$DIRSCRIPTS/PerlLib $DIRSCRIPTS/TD2_util/gtf_to_alignment_gff3.pl $GTF > ${DIR}$NAME.gff3
+perl -I$DIRSCRIPTS/PerlLib $DIRSCRIPTS/TD2_util/gtf_to_alignment_gff3.pl $GTF > ${DIR}$NAME.gff3
 
 TD2.LongOrfs -t ${DIR}$NAME.fasta -O ${DIR}$NAME --complete-orfs-only
 #hmmsearch --cpu 8 -E 1e-10 --domtblout ${NAME}.pfam.domtblout ${DIR}/Pfam-A.hmm $NAME/longest_orfs.pep
@@ -22,7 +22,7 @@ for i in $4 ; do
 done
 #cat ${DIR}$NAME/alnRes_*.m8 > ${DIR}$NAME/combined_alnRes.m8
 
-perl -I/$DIRSCRIPTS/PerlLib $DIRSCRIPTS/TD2_util/cdna_alignment_orf_to_genome_orf.pl \
+perl -I$DIRSCRIPTS/PerlLib $DIRSCRIPTS/TD2_util/cdna_alignment_orf_to_genome_orf.pl \
      $NAME.fasta.TD2.gff3 \
      ${DIR}$NAME.gff3 \
      ${DIR}$NAME.fasta > ${DIR}$NAME.fasta.TD2.genome.gff3
