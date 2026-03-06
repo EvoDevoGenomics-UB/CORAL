@@ -70,6 +70,6 @@ def get_final_output():
 
     if config["run_expression_matrix"] == True :
         rule_all_input_list.append(expand("Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNs.annotated/transcript_count_matrix.csv",specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"])),
-        rule_all_input_list.append(expand("Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_REF/transcript_count_matrix.csv",specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]))
+        rule_all_input_list.append(expand("Expression_matrix/{specie}/ref_annotation/transcript_count_matrix_v{intron}.csv", specie=config["specie"],intron=config["minimap2_max_intron"]))
 
     return rule_all_input_list

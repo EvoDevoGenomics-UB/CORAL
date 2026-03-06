@@ -120,4 +120,4 @@ rule do_expression_matrix:
         expand("Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNs.annotated/transcript_count_matrix.csv",
             specie=config["specie"], ref=config["stringtie_guide_opts"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("Expression_matrix/{specie}/ref_annotation/transcript_count_matrix_v{intron}.csv",
-            specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"])
+            specie=config["specie"],intron=config["minimap2_max_intron"])
