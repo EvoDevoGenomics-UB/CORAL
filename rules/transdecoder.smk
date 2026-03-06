@@ -62,7 +62,7 @@ rule run_busco_prot:
     conda: env_file
     log: "logs/{specie}/log_BUSCO_prot_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
     shell:""" (
-        /Users/nuriat/anaconda3/envs/busco_env/bin/busco -i {input.pep_TD2} -l {input.lin_dir} -o {output.out_pep_TD2} -m proteins) 2> {log}
+        busco -i {input.pep_TD2} -l {input.lin_dir} -o {output.out_pep_TD2} -m proteins) 2> {log}
     """
 
 rule run_busco_prot_ref:
@@ -80,5 +80,5 @@ rule run_busco_prot_ref:
     shell:""" (
         mkdir -p busco_analysis
         gffread -g {input.genome} -y {output.pep_ref} {input.gtf_ref}
-        /Users/nuriat/anaconda3/envs/busco_env/bin/busco -i {output.pep_ref} -l {input.lin_dir} -o {output.out_ref} -m proteins ) 2>&1 | tee {log}
+        busco -i {output.pep_ref} -l {input.lin_dir} -o {output.out_ref} -m proteins ) 2>&1 | tee {log}
     """
