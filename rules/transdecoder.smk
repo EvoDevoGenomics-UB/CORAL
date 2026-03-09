@@ -19,7 +19,7 @@ rule mmseqs2_databases:
     fi ) 2> {log}
     """
 
-rule TransDecoder:
+rule run_TransDecoder:
     input:
         genome = rules.check_genome_format.output.genome,
         gtf = rules.run_final_annotation.output.noOPRNs,
@@ -34,16 +34,19 @@ rule TransDecoder:
     shell: """
     mkdir -p TD2_results/
     mkdir -p TD2_results/{wildcards.specie}/
-    ( {params.snakedir}/scripts/TransDecoder2_script.sh {input.genome} {input.gtf} \
+    ({params.snakedir}/scripts/TransDecoder2_script.sh \
+       {input.genome} \
+       {input.gtf} \
     "TD2_results/{wildcards.specie}/" \
-    {input.db_alias} "{params.snakedir}/scripts" \
+       {input.db_alias} \
+       "{params.snakedir}/scripts" \
     ) 2>&1 | tee {log}
     """
 
 rule run_obtaining_pep_TD2:
     input:
         genome = rules.check_genome_format.output.genome,
-        gff_TD2 = rules.TransDecoder.output.gff3 
+        gff_TD2 = rules.run_TransDecoder.output.gff3 
     output:
         pep_TD2 = "busco_analysis/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.TD2.pep.fasta"
     conda: env_file

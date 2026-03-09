@@ -66,6 +66,7 @@ stringtie_g: '-60'
 stringtie_merge_opts: "-F 0.5 -T 0 -c 2"
 
 #TransDecoder2 and mmseqs2 paramters:
+run_TransDecoder: True
 db_name: "UniProtKB/Swiss-Prot"
 db_alias: "swissprot"
 

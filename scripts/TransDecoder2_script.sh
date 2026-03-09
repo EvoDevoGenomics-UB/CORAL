@@ -11,6 +11,8 @@ perl -I$DIRSCRIPTS/PerlLib $DIRSCRIPTS/TD2_util/gtf_genome_to_cdna_fasta.pl $GTF
 
 perl -I$DIRSCRIPTS/PerlLib $DIRSCRIPTS/TD2_util/gtf_to_alignment_gff3.pl $GTF > ${DIR}$NAME.gff3
 
+mkdir -p ${DIR}$NAME
+
 TD2.LongOrfs -t ${DIR}$NAME.fasta -O ${DIR}$NAME --complete-orfs-only
 #hmmsearch --cpu 8 -E 1e-10 --domtblout ${NAME}.pfam.domtblout ${DIR}/Pfam-A.hmm $NAME/longest_orfs.pep
 
@@ -28,6 +30,7 @@ perl -I$DIRSCRIPTS/PerlLib $DIRSCRIPTS/TD2_util/cdna_alignment_orf_to_genome_orf
      ${DIR}$NAME.fasta > ${DIR}$NAME.fasta.TD2.genome.gff3
 
 mkdir -p ${DIR}${NAME}_files
+
 mv ${DIR}${NAME}/ ${DIR}${NAME}_files/${NAME}
 mv ${NAME}.fasta.TD2.gff3 ${DIR}${NAME}_files
 mv ${DIR}${NAME}.gff3 ${DIR}${NAME}_files
