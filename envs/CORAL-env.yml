@@ -17,5 +17,7 @@ dependencies:
     - gffcompare
     - rust
     - pychopper==2.7.10
+    - perl
+    - perl-uri
     - TD2
     - mmseqs2
