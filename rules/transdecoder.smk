@@ -28,19 +28,43 @@ rule run_TransDecoder:
         outdir = directory("TD2_results/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs_files"),
         gff3 = "TD2_results/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.fasta.TD2.genome.gff3"
     params:
-        snakedir = SNAKEDIR
+        scriptsDIR = path.join(SNAKEDIR,"scripts"),
+        prefix = "{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNsTD2",
+        gtf_ref = REF
     conda: env_file
-    log: "logs/log_TD2_{specie}_guide{ref}_v{intron}_gambat{threshold}.log"
+    log: 
+        log1 = "logs/log_TD2_{specie}_guide{ref}_v{intron}_gambat{threshold}.log",
+        log2 = "logs/{specie}/log_gffcomapre_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNsTD2.log"
     shell: """
     mkdir -p TD2_results/
     mkdir -p TD2_results/{wildcards.specie}/
-    ({params.snakedir}/scripts/TransDecoder2_script.sh \
+    ({params.scriptsDIR}/TransDecoder2_script.sh \
        {input.genome} \
        {input.gtf} \
     "TD2_results/{wildcards.specie}/" \
        {input.db_alias} \
-       "{params.snakedir}/scripts" \
-    ) 2>&1 | tee {log}
+       "{params.scriptsDIR}" \
+    ) 2>&1 | tee {log.log1}
+
+    (mkdir -p Gffcompare_results
+    mkdir -p ./Gffcompare_results/TD2_annotations
+        gffcompare -r {input.gtf} {output.gff3} -o ./Gffcompare_results/TD2_annotations/{params.prefix}
+        gffcompare -r {output.gff3} {input.gtf} -o ./Gffcompare_results/TD2_annotations/{params.prefix}revers
+    if [[ -f "{params.gtf_ref}" ]] ; then
+        gffcompare -r {params.gtf_ref} {output.gff3} -o ./Gffcompare_results/TD2_annotations/{params.prefix}vsREF
+    fi
+    echo 'Performing counting of transcript types...'
+    for i in Gffcompare_results/TD2_annotations/{params.prefix} ./Gffcompare_results/TD2_annotations/{params.prefix}revers ./Gffcompare_results/TD2_annotations/{params.prefix}vsREF ; do
+        if [[ -f "$i.tracking" ]] ; then
+        (for x in "=" c k m n j e o s x i y p r u ; do
+            count=$(awk -v a="$x" '{{if($4==a) print $5,$4}}' $i.tracking | wc -l)
+            echo "$x $count"
+        done) > $i.gffcmp_trans_types.txt
+        echo "File '$i.gffcmp_trans_types.txt' created."
+        fi
+    done
+    touch -c ./Gffcompare_results/TD2_annotations/{params.prefix}.annotated.gtf
+    ) 2>&1 | tee {log.log2}
     """
 
 rule run_obtaining_pep_TD2:
