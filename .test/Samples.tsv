@@ -1,3 +1,4 @@
-Sample1	/github/workspace/.test/data/Sample1.fastq.gz
-Sample2	/github/workspace/.test/data/Sample2_p01.1.fq.gz
-Sample2	/github/workspace/.test/data/Sample2_p01.2.fq.gz
+Sample1	/github/workspace/.test/data/Sample1_new.fastq.gz
+Sample2	/github/workspace/.test/data/Sample2_new.p1.fq.gz
+Sample2	/github/workspace/.test/data/Sample2_new.p2.fq.gz
+Sample3	/github/workspace/.test/data/Sample3.fastq.gz

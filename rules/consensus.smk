@@ -15,10 +15,10 @@ rule run_operon_annotation:
         operongtf = temp("annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_OPRNs.gtf"),
         opgenesgtf = temp("annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_OpGs.gtf"),
         merge = "annotations/{specie}/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.sorted.gtf",
-        def_file = "annotations/{specie}/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.sorted_OPRNvalidation.clean.gtf",
-        opgenesgtfCLEAN = "annotations/{specie}/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.sorted_OPRNvalidation.OpGclean.gtf",
-        oprngtfCLEAN = "annotations/{specie}/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.sorted_OPRNvalidation.OPRNclean.gtf",
-        excluded_file = "annotations/{specie}/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.sorted_OPRNvalidation.excluded.gtf",
+        def_file = touch("annotations/{specie}/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.sorted_OPRNvalidation.clean.gtf"),
+        opgenesgtfCLEAN = touch("annotations/{specie}/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.sorted_OPRNvalidation.OpGclean.gtf"),
+        oprngtfCLEAN = touch("annotations/{specie}/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.sorted_OPRNvalidation.OPRNclean.gtf"),
+        excluded_file = touch("annotations/{specie}/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.sorted_OPRNvalidation.excluded.gtf"),
         db_file = temp("annotations/{specie}/Merge_OPRNs-OpGs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.sorted_OPRNvalidation.db")
     params:
         g_param = config["stringtie_OpGs_g"],
@@ -50,14 +50,23 @@ rule run_operon_annotation:
         stringtie --merge -l OPRN -f 0 -F 0 -T 0 -c 0 -g 0 -o {output.operongtf} annotations/{wildcards.specie}/List_merge_OPRNs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt ; \
     else
         echo "No non-empty OPRN GTFs found" >&2
-        touch {output.operongtf}
+        touch ./{output.operongtf}
     fi
 
     cat {output.operongtf} {output.opgenesgtf} > {params.name}.tmp.gtf ; \
     gffread --sort-alpha -F -T -o {output.merge} {params.name}.tmp.gtf ; rm {params.name}.tmp.gtf
 
-    python {params.snakedir}/scripts/operon_validation.py -f {output.merge} --log {log.logOPRN}
-    grep 'StringTie	transcript' {output.opgenesgtfCLEAN} | wc -l ; ) 2>&1 | tee {log.logSTRG}
+    if [ -s {output.merge} ] ; then
+        python {params.snakedir}/scripts/operon_validation.py -f {output.merge} --log {log.logOPRN}
+        grep 'StringTie	transcript' {output.opgenesgtfCLEAN} | wc -l 
+    else
+        (echo "Empty OpG-OPRN GTF, validation skiped"
+        touch ./{output.db_file}
+        touch ./{output.opgenesgtfCLEAN}
+        touch ./{output.oprngtfCLEAN}
+        touch ./{output.excluded_file} ) 2>&1 | tee {log.logOPRN}
+    fi
+    ) 2>&1 | tee {log.logSTRG}
     """
 
 # Create gene final consensus annotations
@@ -85,10 +94,11 @@ rule run_gCLEAN_annotation:
         gffcompare -r {input.oprngtf} GTFfile.$var_name.tmp -o filter_$var_name
         awk '{{if($3=="=" ) print $5}}' filter_$var_name.GTFfile.$var_name.tmp.tmap > filter.$var_name.list.tmp
         gffread --nids filter.$var_name.list.tmp GTFfile.$var_name.tmp -T -o {output.cleanfinal}
+        rm filter*${{var_name}}*
     else
         cp GTFfile.$var_name.tmp {output.cleanfinal}
     fi
-    rm filter*${{var_name}}* ; rm GTFfile.$var_name.tmp ;
+    rm GTFfile.$var_name.tmp ;
 
     echo "  Final merge CLEAN done" ; \
     grep 'StringTie	transcript' {output.cleanfinal} | wc -l ) 2>&1 | tee {log}
@@ -113,27 +123,36 @@ rule run_final_annotation:
         log1 = "logs/{specie}/log_final_annotations_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_part1.log",
         log2 = "logs/{specie}/log_final_annotations_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_part2.log"
     shell:"""
-    (if [ -s {input.excluded_file} ] ; then 
+    (if [ -s {input.opgenesgtf} ] ; then 
+        GUIDE= "-G {input.opgenesgtf}"
+    else
+        GUIDE=""
+    fi
+    if [ -s {input.excluded_file} ] ; then 
         stringtie --merge {input.cleanfinal} {input.excluded_file} \
-        -G {input.opgenesgtf} \
+        $GUIDE \
         -l g -f {params.freq} -F 0 -T 0 -c 0 -g {params.g_param} \
         -o {output.noOPRNs} ; \
     else
         stringtie --merge {input.cleanfinal} \
-        -G {input.opgenesgtf} \
+        $GUIDE \
         -l g -f {params.freq} -F 0 -T 0 -c 0 -g {params.g_param} \
         -o {output.noOPRNs} ; \
     fi
     echo "  Final CLEAN-noOPRNs done" ; \
     grep 'StringTie	transcript' {output.noOPRNs} | wc -l ; ) 2>&1 | tee {log.log1}
 
-    (cat {input.oprnsgtf} {output.noOPRNs} > {output.andOPRNs}.1.tmp ; \
-    gffread --sort-alpha -F -T -o {output.andOPRNs}.2.tmp {output.andOPRNs}.1.tmp ; 
-    python {params.snakedir}/scripts/add_operonID.py -f {output.andOPRNs}.2.tmp -o {output.andOPRNs} --log {output.andOPRNs}.log
-    rm {output.andOPRNs}*.OPRNids.db {output.andOPRNs}*.tmp
-
-    echo "  Final CLEAN-andOPRNs done"
-    grep 'StringTie	transcript' {output.andOPRNs} | wc -l ) 2>&1 | tee {log.log2}
+    (if [ -s {input.oprnsgtf} ] ; then 
+        cat {input.oprnsgtf} {output.noOPRNs} > {output.andOPRNs}.1.tmp ; \
+        gffread --sort-alpha -F -T -o {output.andOPRNs}.2.tmp {output.andOPRNs}.1.tmp ; 
+        python {params.snakedir}/scripts/add_operonID.py -f {output.andOPRNs}.2.tmp -o {output.andOPRNs} --log {output.andOPRNs}.log
+        rm {output.andOPRNs}*.OPRNids.db {output.andOPRNs}*.tmp
+        echo "  Final CLEAN-andOPRNs done"
+        grep 'StringTie	transcript' {output.andOPRNs} | wc -l 
+    else
+     touch {output.andOPRNs}
+     echo "  Final CLEAN-andOPRNs not created because of lack of OPRNs..."
+    fi ) 2>&1 | tee {log.log2}
     """
 
 # Obtaining coverage of final annotation
@@ -150,5 +169,9 @@ rule run_recover_coverage:
     log: "logs/{specie}/log_recover_coverage_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
     shell: """ (
     stringtie -G {input.gtf2} -e -o {output.gtfFinal2} {input.bams}
-    stringtie -G {input.gtf} -e -o {output.gtfFinal} {input.bams} ) 2> {log}
+    if [ -s {input.gtf} ] ; then
+        stringtie -G {input.gtf} -e -o {output.gtfFinal} {input.bams}
+    else
+        touch {output.gtfFinal}
+    fi ) 2> {log}
     """

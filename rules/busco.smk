@@ -62,7 +62,11 @@ rule run_busco_analyses:
     shell:""" (
         busco -i {input.fa_longtrans} -l {input.lin_dir} -o {output.out_longtrans} -m transcriptome
         busco -i {input.fa_noOPRNs} -l {input.lin_dir} -o {output.out_noOPRNs} -m transcriptome
-        busco -i {input.fa_andOPRNs} -l {input.lin_dir} -o {output.out_andOPRNs} -m transcriptome ) 2> {log}
+        if [ -s {input.fa_andOPRNs} ] ; then
+            busco -i {input.fa_andOPRNs} -l {input.lin_dir} -o {output.out_andOPRNs} -m transcriptome
+        else
+            touch {output.out_andOPRNs}
+        fi ) 2> {log}
     """
 
 rule run_busco_reference_annot:

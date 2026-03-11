@@ -3,7 +3,7 @@ channels:
     - bioconda
     - nanoporetech
 dependencies:
-    - python<=3.11
+    - python<=3.10
     - minimap2
     - samtools>=1.9
     - gffutils

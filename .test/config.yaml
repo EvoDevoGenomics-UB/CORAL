@@ -32,7 +32,7 @@ samplesheet: "/github/workspace/.test/Samples.tsv"
 
 # Nanopore long-read processing
 # Is false because we do not have test data that need processing yet...
-run_pychopper: False
+run_pychopper: True
 pychopper_opts: ""
 seqkitQ: 7
 min_seqkit: 200

@@ -70,8 +70,10 @@ rule prepare_fastqs:
             {params.pc_opts} {output.fq} processed_reads/{wildcards.sample}_full_length_reads.fq \
             ) 2> {log.log2}
             seqkit seq -Q {params.seqkitQ} -m {params.min_seqkit} \
-            processed_reads/{wildcards.sample}_full_length_reads.fq > {output.flq}
+            processed_reads/{wildcards.sample}_full_length_reads.fq processed_reads/{wildcards.sample}_rescued.fq > {output.flq}
             gzip processed_reads/{wildcards.sample}_full_length_reads.fq
+            gzip processed_reads/{wildcards.sample}_unclassified.fq
+            gzip processed_reads/{wildcards.sample}_rescued.fq
         else
             seqkit seq -Q {params.seqkitQ} -m {params.min_seqkit} {output.fq} > {output.flq}
         fi
