@@ -123,19 +123,18 @@ rule run_final_annotation:
         log1 = "logs/{specie}/log_final_annotations_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_part1.log",
         log2 = "logs/{specie}/log_final_annotations_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_part2.log"
     shell:"""
-    (if [ -s {input.opgenesgtf} ] ; then 
-        GUIDE= "-G {input.opgenesgtf}"
+    (if [ -s {input.excluded_file} ] ; then 
+        FILES="{input.cleanfinal} {input.excluded_file}"
     else
-        GUIDE=""
+        FILES="{input.cleanfinal}"
     fi
-    if [ -s {input.excluded_file} ] ; then 
-        stringtie --merge {input.cleanfinal} {input.excluded_file} \
-        $GUIDE \
+    if [ -s {input.opgenesgtf} ] ; then 
+        stringtie --merge $FILES \
+        -G {input.opgenesgtf} \
         -l g -f {params.freq} -F 0 -T 0 -c 0 -g {params.g_param} \
         -o {output.noOPRNs} ; \
     else
-        stringtie --merge {input.cleanfinal} \
-        $GUIDE \
+        stringtie --merge $FILES \
         -l g -f {params.freq} -F 0 -T 0 -c 0 -g {params.g_param} \
         -o {output.noOPRNs} ; \
     fi
