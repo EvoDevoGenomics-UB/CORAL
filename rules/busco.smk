@@ -65,7 +65,7 @@ rule run_busco_analyses:
         if [ -s {input.fa_andOPRNs} ] ; then
             busco -i {input.fa_andOPRNs} -l {input.lin_dir} -o {output.out_andOPRNs} -m transcriptome
         else
-            touch {output.out_andOPRNs}
+            mkdir {output.out_andOPRNs}
         fi ) 2> {log}
     """
 
@@ -108,7 +108,9 @@ rule busco_plot:
         mkdir -p {output.out_dir}
         cp {params.workdir}{input.out_longtrans}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.noOPRNs_longtrans.txt
         cp {params.workdir}{input.out_noOPRNs}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.noOPRNs.txt
-        cp {params.workdir}{input.out_andOPRNs}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.andOPRNs.txt
+        if [ -s {params.workdir}{input.out_andOPRNs}/short_summary.*.txt ] ; then
+            cp {params.workdir}{input.out_andOPRNs}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.andOPRNs.txt ; \
+        fi
         if [ {input.out_ref} != "" ]; then
             cp {params.workdir}{input.out_ref}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.REF.txt
         fi
