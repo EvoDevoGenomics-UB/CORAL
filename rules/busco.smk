@@ -10,7 +10,7 @@ rule run_longest_trans_filter:
     log: "logs/{specie}/log_long_trans_filter_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.log"
     shell:"""
     (python {params.snakedir}/scripts/Longest_transcript_filter.py {input.gtf}
-    touch {output.filtergtf} ) 2> {log}
+    touch -c {output.filtergtf} ) 2> {log}
     """
 
 rule run_obtaining_fasta:
@@ -31,16 +31,19 @@ rule run_obtaining_fasta:
     gffread -g {input.genome} -w {output.fasta_noOPRNs} {input.gtf_noOPRNs}
     gffread -g {input.genome} -w {output.fasta_andOPRNs} {input.gtf_andORPNs} ) 2> {log}
     """
+
 rule busco_download_lineage:
     output:
-        lin_dir = directory(path.join("busco_downloads/lineages/", config["lineages"]))
+        lin_dir = directory(path.join("busco_downloads/lineages/", config["lineages"])),
+        lin_dir_root = directory("busco_downloads/")
     params:
         lineage = config["lineages"]
     conda: env_file
     log: "logs/log_busco_download_lineage.log"
     shell:"""
-        (busco --download {params.lineage} --download_path {output.lin_dir} 
-        ls -l {output.lin_dir} ) 2> {log}
+        (
+        busco --download {params.lineage} --download_path {output.lin_dir_root}
+        ls -l {output.lin_dir} )  2>&1 | tee {log}
     """
 rule run_busco_analyses:
     input:
@@ -59,7 +62,11 @@ rule run_busco_analyses:
     shell:""" (
         busco -i {input.fa_longtrans} -l {input.lin_dir} -o {output.out_longtrans} -m transcriptome
         busco -i {input.fa_noOPRNs} -l {input.lin_dir} -o {output.out_noOPRNs} -m transcriptome
-        busco -i {input.fa_andOPRNs} -l {input.lin_dir} -o {output.out_andOPRNs} -m transcriptome ) 2> {log}
+        if [ -s {input.fa_andOPRNs} ] ; then
+            busco -i {input.fa_andOPRNs} -l {input.lin_dir} -o {output.out_andOPRNs} -m transcriptome
+        else
+            mkdir {output.out_andOPRNs}
+        fi ) 2> {log}
     """
 
 rule run_busco_reference_annot:
@@ -101,7 +108,9 @@ rule busco_plot:
         mkdir -p {output.out_dir}
         cp {params.workdir}{input.out_longtrans}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.noOPRNs_longtrans.txt
         cp {params.workdir}{input.out_noOPRNs}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.noOPRNs.txt
-        cp {params.workdir}{input.out_andOPRNs}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.andOPRNs.txt
+        if [ -s {params.workdir}{input.out_andOPRNs}/short_summary.*.txt ] ; then
+            cp {params.workdir}{input.out_andOPRNs}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.andOPRNs.txt ; \
+        fi
         if [ {input.out_ref} != "" ]; then
             cp {params.workdir}{input.out_ref}/short_summary.*.txt {output.out_dir}/short_summary.specific.metazoa_odb10.REF.txt
         fi

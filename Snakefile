@@ -13,6 +13,7 @@ workdir: path.join(config["workdir_top"], config["pipeline"])
 WORKDIR = path.join(config["workdir_top"], config["pipeline"])
 SNAKEDIR = path.dirname(workflow.snakefile)
 env_file = path.join(path.dirname(workflow.snakefile),"envs/CORAL-env.yml")
+#env_file_TD2 = path.join(path.dirname(workflow.snakefile),"envs/CORAL-env_TD2.yml")
 
 in_genome = config["genome_fasta"]
 REF = config["reference_annot"]
@@ -23,8 +24,10 @@ include: "rules/sample-annot.smk"
 include: "rules/gamba.smk"
 include: "rules/consensus.smk"
 include: "rules/busco.smk"
-include: "rules/gffcmp.smk"
+if config["run_gffcomapre"] == True :
+    include: "rules/gffcmp.smk"
 include: "rules/exp-matrix.smk"
+include: "rules/transdecoder.smk"
 
 rule all:
     input:
@@ -113,7 +116,9 @@ rule do_gffcompare:
 ## Expression matrix creation
 rule do_expression_matrix:
     input:
-        expand("Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-andOPRNs/gene_count_matrix.csv", 
+        expand("Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNs.annotated/gene_count_matrix.csv", 
             specie=config["specie"], ref=config["stringtie_guide_opts"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        expand("Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-andOPRNs/transcript_count_matrix.csv",
-            specie=config["specie"], ref=config["stringtie_guide_opts"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"])
+        expand("Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNs.annotated/transcript_count_matrix.csv",
+            specie=config["specie"], ref=config["stringtie_guide_opts"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
+        expand("Expression_matrix/{specie}/ref_annotation/transcript_count_matrix_v{intron}.csv",
+            specie=config["specie"],intron=config["minimap2_max_intron"])

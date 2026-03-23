@@ -9,6 +9,16 @@ pipeline: "CORAL_results/"
 #Here the '.snakemake' folder containing the conda environments will be created
 #together with all teh result files and folders. 
 
+### Pipeline-specific parameters:
+# Specie name, it will be use for naming output files
+specie: ["CORAL"]
+# Input genome
+genome_fasta: "/$USER/home/data/reference_genome.fa"
+# Absolute path to reference annotation (optional)
+reference_annot: []
+# Run a Gffcomapre with the reference?
+run_gffcomapre: False
+
 ### FASTQ files :
 # OPTION 1: SAMPLESHEET
 # You can give a samplesheet in TSV format with two columns: SampleID absolute_path/File.fastq
@@ -24,15 +34,12 @@ data_dir: "/$USER/home/data/"
 samples: ["BP01","BP02","BP03","BP04","BP05","BP06","BP07","BP08","BP09","BP10new","BP11","BP12"]
 data_suffix: "_full_length_reads.clean.fq"
 
-### Pipeline-specific parameters:
-# Specie name, it will be use for naming output files
-specie: ["CORAL"]
-# Input genome
-genome_fasta: "/$USER/home/data/reference_genome.fa"
-# Absolute path to reference annotation (optional)
-reference_annot: []
-# Run a Gffcomapre with the reference?
-run_gffcomapre: False
+# Nanopore long-read processing
+# Is false because we do not have test data that need processing yet...
+run_pychopper: False
+pychopper_opts: ""
+seqkitQ: 7
+min_seqkit: 200
 
 # Minimap2 options when generating index
 minimap_index_opts: "-k14"
@@ -57,6 +64,11 @@ stringtie_OpGs_g: '-150'
 stringtie_freq: 0.2
 stringtie_g: '-60'
 stringtie_merge_opts: "-F 0.5 -T 0 -c 2"
+
+#TransDecoder2 and mmseqs2 paramters:
+run_TransDecoder: True
+db_name: "UniProtKB/Swiss-Prot"
+db_alias: "swissprot"
 
 # BUSCO options
 lineages: metazoa_odb10
