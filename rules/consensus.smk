@@ -9,8 +9,8 @@ for SAMPLE in SAMPLES:
 #Create oepron and operon-contained genes annotations
 rule run_operon_annotation:
     input:
-        gtfsoperons = gtfsoperons_samples,
-        gtfsopgenes = gtfsopgenes_samples
+        gtfsoperons = ancient(gtfsoperons_samples),
+        gtfsopgenes = ancient(gtfsopgenes_samples)
     output:
         operongtf = temp("annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_OPRNs.gtf"),
         opgenesgtf = temp("annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_OpGs.gtf"),
@@ -72,14 +72,16 @@ rule run_operon_annotation:
 # Create gene final consensus annotations
 rule run_gCLEAN_annotation:
     input:
-        gtfsclean = gtfsclean_samples,
-        oprngtf = rules.run_operon_annotation.output.oprngtfCLEAN
+        gtfsclean = ancient(gtfsclean_samples),
+        oprngtf = ancient(rules.run_operon_annotation.output.oprngtfCLEAN),
+        opgsgtf = ancient(rules.run_operon_annotation.output.opgenesgtfCLEAN)
     output:
         cleanfinal = "annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_mergeCLEAN.gtf"
     params:
         freq = config["stringtie_freq"],
         g_param = config["stringtie_g"],
         opts = config["stringtie_merge_opts"]
+    threads: config["threads"]
     conda: env_file
     log: "logs/{specie}/log_StrignTie_merge_opCLEAN_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
     shell:"""
@@ -88,12 +90,29 @@ rule run_gCLEAN_annotation:
     stringtie --version
 
     stringtie --merge annotations/{wildcards.specie}/List_merge_opCLEAN.$var_name.txt \
-     -l g -f {params.freq} {params.opts} -g {params.g_param} -o GTFfile.$var_name.tmp ; \
+     -l g -f {params.freq} {params.opts} -g {params.g_param} -o GTFfileLose.$var_name.tmp -p {threads}; \
+    echo "GTFfileLose.$var_name.tmp done!"
+
+    stringtie --merge annotations/{wildcards.specie}/List_merge_opCLEAN.$var_name.txt \
+     -l g -f {params.freq} -c 50 -g '-90' -o GTFfileStrict.$var_name.tmp -p {threads}; \
+    echo "GTFfileStrict.$var_name.tmp done!"
+
+    gffcompare -r GTFfileLose.$var_name.tmp GTFfileStrict.$var_name.tmp -o filter0_$var_name
+    awk '{{if($3=="=" || $3=="c" ||$3=="j") print $2}}' filter0_$var_name.GTFfileStrict.$var_name.tmp.tmap > filter0.$var_name.list.tmp
+    gffread --nids filter0.$var_name.list.tmp GTFfileLose.$var_name.tmp -T -o GTFfileLose.$var_name.clean.tmp
+    echo "GTFfileLose.$var_name.clean.tmp done!"
+
+    stringtie --merge GTFfileStrict.$var_name.tmp GTFfileLose.$var_name.clean.tmp \
+      -l g -f {params.freq} -F 0 -T 0 -c 0 -g '-90' -o GTFfile.$var_name.tmp -p {threads}
     
     if [ $(grep 'StringTie	transcript' {input.oprngtf} | wc -l ) -ge 1 ] ; then
         gffcompare -r {input.oprngtf} GTFfile.$var_name.tmp -o filter_$var_name
-        awk '{{if($3=="=" ) print $5}}' filter_$var_name.GTFfile.$var_name.tmp.tmap > filter.$var_name.list.tmp
-        gffread --nids filter.$var_name.list.tmp GTFfile.$var_name.tmp -T -o {output.cleanfinal}
+        awk '{{if($3=="=") print $5}}' filter_$var_name.GTFfile.$var_name.tmp.tmap > filter.$var_name.list.tmp
+        gffcompare -r {input.opgsgtf} GTFfile.$var_name.tmp -o filter2_$var_name
+        awk '{{if($3=="=" || $3=="c" ||$3=="j") print $5}}' filter2_$var_name.GTFfile.$var_name.tmp.tmap > filter2.$var_name.list.tmp
+        cat filter.$var_name.list.tmp filter2.$var_name.list.tmp > filter3.$var_name.list.tmp
+
+        gffread --nids filter3.$var_name.list.tmp GTFfile.$var_name.tmp -T -o {output.cleanfinal}
         rm filter*${{var_name}}*
     else
         cp GTFfile.$var_name.tmp {output.cleanfinal}
@@ -159,8 +178,8 @@ rule run_recover_coverage:
     input:
         gtf = rules.run_final_annotation.output.andOPRNs ,
         gtf2 = rules.run_final_annotation.output.noOPRNs ,
-        bams = expand("alignments/{specie}/{specie}_{sample}_reads_aln_v{intron}.sorted.bam", 
-            specie=config["specie"], sample=SAMPLES, intron=config["minimap2_max_intron"])
+        bams = ancient(expand("alignments/{specie}/{specie}_{sample}_reads_aln_v{intron}.sorted.bam", 
+            specie=config["specie"], sample=SAMPLES, intron=config["minimap2_max_intron"]))
     output:
         gtfFinal = "annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-andOPRNs.counts.gtf",
         gtfFinal2 = "annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.counts.gtf"

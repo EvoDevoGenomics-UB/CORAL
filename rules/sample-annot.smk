@@ -1,7 +1,7 @@
 
 rule run_stringtie_sample_annotations:
     input: 
-        bam = "alignments/{specie}/{specie}_{sample}_reads_aln_v{intron}.sorted.bam"
+        bam = ancient("alignments/{specie}/{specie}_{sample}_reads_aln_v{intron}.sorted.bam")
     output:
         gtf = "sample_annotations/{specie}/{specie}_{sample}_guide{ref}_v{intron}.gtf"
     params:

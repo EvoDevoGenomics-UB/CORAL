@@ -3,8 +3,8 @@ SCRIPTDIR = path.join(SNAKEDIR,"scripts")
 ## Expression matrix creation
 rule run_expression_matrix:
     input:
-        gtf = (rules.run_gffcompare.output.gffcmp_out) if config["run_gffcomapre"] == True else rules.run_final_annotation.output.andOPRNs,
-        bams = expand("alignments/{{specie}}/{{specie}}_{sample}_reads_aln_v{{intron}}.sorted.bam", sample=SAMPLES)
+        gtf = ancient((rules.run_gffcompare.output.gffcmp_out) if config["run_gffcomapre"] == True else rules.run_final_annotation.output.andOPRNs),
+        bams = ancient(expand("alignments/{{specie}}/{{specie}}_{sample}_reads_aln_v{{intron}}.sorted.bam", sample=SAMPLES))
     output:
         out_file_g = "Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNs.annotated/gene_count_matrix.csv",
         out_file_t = "Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNs.annotated/transcript_count_matrix.csv"
@@ -32,7 +32,7 @@ rule run_expression_matrix:
 rule run_expression_matrix_REF:
     input:
         gtf = REF ,
-        bams = expand("alignments/{{specie}}/{{specie}}_{sample}_reads_aln_v{{intron}}.sorted.bam", sample=SAMPLES)
+        bams = ancient(expand("alignments/{{specie}}/{{specie}}_{sample}_reads_aln_v{{intron}}.sorted.bam", sample=SAMPLES))
     output:
         out_file_g = "Expression_matrix/{specie}/ref_annotation/gene_count_matrix_v{intron}.csv",
         out_file_t = "Expression_matrix/{specie}/ref_annotation/transcript_count_matrix_v{intron}.csv"

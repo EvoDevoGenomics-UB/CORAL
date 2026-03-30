@@ -16,7 +16,7 @@ rule check_genome_format:
 
 rule build_minimap_index:
     input:
-        genome = rules.check_genome_format.output.genome
+        genome = ancient(rules.check_genome_format.output.genome)
     output:
         index = "index/{specie}_genome_index.mmi"
     params:
@@ -82,8 +82,9 @@ rule prepare_fastqs:
 
 rule run_minimap2:
     input:
-        index = rules.build_minimap_index.output,
-        fastq = rules.prepare_fastqs.output.flq
+        index = ancient(rules.build_minimap_index.output),
+        stats = ancient("logs/{sample}_stats_input_reads.txt"),
+        fastq = ancient(rules.prepare_fastqs.output.flq)
     output:
         sam = temp("alignments/{specie}/{specie}_{sample}_reads_aln_v{intron}.sam")
     params:
@@ -93,15 +94,20 @@ rule run_minimap2:
     conda: env_file
     log: "logs/{specie}/{specie}_{sample}_v{intron}_minimap2_run.log"
     shell: """
-    (minimap2 -t {threads} {params.opts} -G {params.max_intron} {input.index} {input.fastq} > {output.sam} ; \
+    TYPE=$(tail -1 {input.stats} | awk '{{print $3}}')
+    (if "$TYPE" == "RNA" ; then
+        minimap2 -t {threads} {params.opts} -uf -G {params.max_intron} {input.index} {input.fastq} > {output.sam} ; \
+    else
+        minimap2 -t {threads} {params.opts} -G {params.max_intron} {input.index} {input.fastq} > {output.sam} ; \
+    fi
     head -2 {output.sam} ) 2>&1 | tee {log}
     echo "Minimap2 alignment done: {output.sam} created"
     """
 
 rule run_samtools:
     input:
-        sam = rules.run_minimap2.output.sam,
-        index = rules.build_minimap_index.output
+        sam = ancient(rules.run_minimap2.output.sam),
+        index = ancient(rules.build_minimap_index.output)
     output:
         bam = protected("alignments/{specie}/{specie}_{sample}_reads_aln_v{intron}.sorted.bam"),
         bai = "alignments/{specie}/{specie}_{sample}_reads_aln_v{intron}.sorted.bam.bai"
@@ -120,7 +126,7 @@ rule run_samtools:
 
 rule run_aling_stats:
     input:
-        bam = "alignments/{specie}/{specie}_{sample}_reads_aln_v{intron}.sorted.bam"
+        bam = ancient("alignments/{specie}/{specie}_{sample}_reads_aln_v{intron}.sorted.bam")
     output:
         stats="alignments/{specie}/{specie}_{sample}_reads_aln_sorted_v{intron}.stats.txt"
     conda: env_file
