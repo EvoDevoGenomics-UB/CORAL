@@ -103,7 +103,11 @@ rule do_busco_analyses:
             specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
         expand("busco_analysis/{specie}/BUSCO_results_all_summaries_{specie}_guide{ref}_v{intron}_gambat{threshold}",
             specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"])
-        
+
+rule do_transdecoder:
+    input:
+        get_TD2_output()
+
 #### OPTIONAL steps
 ## Comparing new annotations againts reference one
 rule do_gffcompare:
@@ -114,9 +118,17 @@ rule do_gffcompare:
 ## Expression matrix creation
 rule do_expression_matrix:
     input:
-        expand("Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNs.annotated/gene_count_matrix.csv", 
-            specie=config["specie"], ref=config["stringtie_guide_opts"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        expand("Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNs.annotated/transcript_count_matrix.csv",
-            specie=config["specie"], ref=config["stringtie_guide_opts"], intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]),
-        expand("Expression_matrix/{specie}/ref_annotation/transcript_count_matrix_v{intron}.csv",
-            specie=config["specie"],intron=config["minimap2_max_intron"])
+        get_expMatrix_output()
+
+## Obtian extra GTF files
+rule obtain_gtf:
+    input:
+        gtf = lambda wildcards: GTF_DICT[wildcards.gtf_name]
+    output:
+        gtf = "GTFs_inputs/{gtf_name}.gtf"
+    conda: env_file
+    log: "logs/log_input_{gtf_name}.log"
+    shell: """
+    (mkdir -p GTFs_inputs
+    cp -r {input.gtf} {output.gtf} ) 2> {log}
+    """

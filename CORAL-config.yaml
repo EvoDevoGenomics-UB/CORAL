@@ -63,7 +63,7 @@ operon_threshold: 1.00
 stringtie_OpGs_g: '-150'
 stringtie_freq: 0.2
 stringtie_g: '-60'
-stringtie_merge_opts: "-F 0.5 -T 0 -c 2"
+stringtie_merge_opts: "-F 0.5 -T 0 -c 1.5"
 
 #TransDecoder2 and mmseqs2 paramters:
 run_TransDecoder: True
@@ -78,5 +78,8 @@ run_expression_matrix: True
 # Mean length of long-reads (to use for expression matrix)
 length: 860
 
+# Absolute path to additional GTF file to use on TD2 and Expression matrix
+extraGTF: ""
+
 ###
-#comand to execute it: snakemake --use-conda --snakefile CORAL.smk --cores 8
+#comand to execute it: snakemake --use-conda --snakefile ./CORAL/Snakefile --cores 8

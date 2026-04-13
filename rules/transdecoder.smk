@@ -22,19 +22,18 @@ rule mmseqs2_databases:
 rule run_TransDecoder:
     input:
         genome = rules.check_genome_format.output.genome,
-        gtf = rules.run_final_annotation.output.noOPRNs,
+        gtf = "GTFs_inputs/{gtf_name}.gtf",
         db_alias = rules.mmseqs2_databases.output.db_alias
     output:
-        outdir = directory("TD2_results/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs_files"),
-        gff3 = "TD2_results/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.fasta.TD2.genome.gff3"
+        gff3 = "TD2_results/{specie}/{gtf_name}.fasta.TD2.genome.gff3"
     params:
         scriptsDIR = path.join(SNAKEDIR,"scripts"),
-        prefix = "{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNsTD2",
+        prefix = "{gtf_name}_TD2",
         gtf_ref = REF
     conda: env_file
     log: 
-        log1 = "logs/log_TD2_{specie}_guide{ref}_v{intron}_gambat{threshold}.log",
-        log2 = "logs/{specie}/log_gffcomapre_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNsTD2.log"
+        log1 = "logs/log_TD2_{specie}_{gtf_name}.log",
+        log2 = "logs/{specie}/log_gffcomapre_{gtf_name}_TD2.log"
     shell: """
     mkdir -p TD2_results/
     mkdir -p TD2_results/{wildcards.specie}/
@@ -43,7 +42,8 @@ rule run_TransDecoder:
        {input.gtf} \
     "TD2_results/{wildcards.specie}/" \
        {input.db_alias} \
-       "{params.scriptsDIR}" \
+       "{params.scriptsDIR}" ;\
+    cp -r TD2_results/{wildcards.specie}/{wildcards.gtf_name}.fasta.TD2.genome.gff3 {output.gff3} \
     ) 2>&1 | tee {log.log1}
 
     (mkdir -p Gffcompare_results
@@ -72,9 +72,9 @@ rule run_obtaining_pep_TD2:
         genome = rules.check_genome_format.output.genome,
         gff_TD2 = rules.run_TransDecoder.output.gff3 
     output:
-        pep_TD2 = "busco_analysis/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.TD2.pep.fasta"
+        pep_TD2 = "busco_analysis/{specie}/{gtf_name}.TD2.pep.fasta"
     conda: env_file
-    log: "logs/{specie}/log_obtaining_pep_GTFs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
+    log: "logs/{specie}/log_obtaining_pep_GTFs_{gtf_name}.log"
     shell:"""
     (mkdir -p busco_analysis
     gffread -g {input.genome} -y {output.pep_TD2} {input.gff_TD2} ) 2> {log}
@@ -85,9 +85,9 @@ rule run_busco_prot:
         lin_dir = rules.busco_download_lineage.output.lin_dir ,
         pep_TD2 = rules.run_obtaining_pep_TD2.output.pep_TD2
     output:
-        out_pep_TD2 = directory("busco_analysis/{specie}/BUSCO_prot_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNs")
+        out_pep_TD2 = directory("busco_analysis/{specie}/BUSCO_prot_{gtf_name}")
     conda: env_file
-    log: "logs/{specie}/log_BUSCO_prot_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
+    log: "logs/{specie}/log_BUSCO_prot_{gtf_name}.log"
     shell:""" (
         busco -i {input.pep_TD2} -l {input.lin_dir} -o {output.out_pep_TD2} -m proteins) 2> {log}
     """

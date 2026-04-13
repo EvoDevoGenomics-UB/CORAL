@@ -43,6 +43,53 @@ else:
         for s in SAMPLES
     }
 
+def get_gtf():
+    gtf_input_list = [config["extraGTF"]]
+        
+    if config["run_gffcomapre"] == True:
+        gtf_input_list.extend(expand(
+            "Gffcompare_results/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNs.annotated.gtf",
+            specie=config["specie"],
+            ref=config["stringtie_guide_opts"],
+            intron=config["minimap2_max_intron"],
+            threshold=config["operon_threshold"]
+        ))
+    else:
+        gtf_input_list.extend(expand(
+            "annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.gtf",
+            specie=config["specie"],
+            ref=config["stringtie_guide_opts"],
+            intron=config["minimap2_max_intron"],
+            threshold=config["operon_threshold"]
+        ))
+
+    return gtf_input_list
+
+GTF_DICT = {
+    os.path.basename(gtf).replace(".gtf", ""): gtf
+    for gtf in get_gtf()
+    if gtf
+}
+
+NAMES = list(GTF_DICT.keys())
+
+def get_TD2_output():
+    input_TD2_list=[expand("TD2_results/{specie}/{gtf_name}.fasta.TD2.genome.gff3", gtf_name = NAMES ,specie=config["specie"]),
+                    expand("busco_analysis/{specie}/{gtf_name}.TD2.pep.fasta", gtf_name = NAMES ,specie=config["specie"]),
+                    expand("busco_analysis/{specie}/BUSCO_prot_{gtf_name}", gtf_name = NAMES ,specie=config["specie"])
+                    ]
+    if config["reference_annot"] not in (None, [], ""):
+        input_TD2_list.extend(expand("busco_analysis/{specie}/{specie}_LRannot_REF.pep.fasta", specie=config["specie"]))
+    return input_TD2_list
+    
+def get_expMatrix_output():
+    expMatrix_input_list=[expand("Expression_matrix/{specie}/{gtf_name}/gene_count_matrix_v{intron}.csv",
+            specie=config["specie"], intron=config["minimap2_max_intron"], gtf_name = NAMES)]
+    if config["reference_annot"] not in (None, [], ""):
+        expMatrix_input_list.extend(expand("Expression_matrix/{specie}/ref_annotation/transcript_count_matrix_v{intron}.csv", specie=config["specie"],intron=config["minimap2_max_intron"]))
+    
+    return expMatrix_input_list
+
 def get_final_output():
     rule_all_input_list=["logs/versions.txt","gamba",
         expand("logs/{sample}_stats_input_reads.txt", sample=SAMPLES),
@@ -61,20 +108,24 @@ def get_final_output():
         expand("busco_analysis/{specie}/BUSCO_results_all_summaries_{specie}_guide{ref}_v{intron}_gambat{threshold}", specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"])]
         
     if config["reference_annot"] not in (None, [], ""):
-        rule_all_input_list.append(expand("busco_analysis/{specie}/BUSCO_trans_{specie}_LRannot_REF", specie=config["specie"]))
+        rule_all_input_list.extend(expand("busco_analysis/{specie}/BUSCO_trans_{specie}_LRannot_REF", specie=config["specie"]))
         if config["run_gffcomapre"] == True :
-            rule_all_input_list.append(expand("Gffcompare_results/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}",specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]))
+            rule_all_input_list.extend(expand("Gffcompare_results/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}",specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]))
             
     if config["run_expression_matrix"] == True :
-        rule_all_input_list.append(expand("Expression_matrix/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNs.annotated/transcript_count_matrix.csv",specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"])),
+        rule_all_input_list.extend(expand("Expression_matrix/{specie}/{gtf_name}/gene_count_matrix_v{intron}.csv",
+            specie=config["specie"], intron=config["minimap2_max_intron"], gtf_name = NAMES )),
         if config["reference_annot"] not in (None, [], ""):
-            rule_all_input_list.append(expand("Expression_matrix/{specie}/ref_annotation/transcript_count_matrix_v{intron}.csv", specie=config["specie"],intron=config["minimap2_max_intron"]))
+            rule_all_input_list.extend(expand("Expression_matrix/{specie}/ref_annotation/transcript_count_matrix_v{intron}.csv", specie=config["specie"],intron=config["minimap2_max_intron"]))
 
     if config["run_TransDecoder"] == True :
-        rule_all_input_list.append(expand("TD2_results/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.fasta.TD2.genome.gff3", specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"])),
-        rule_all_input_list.append(expand("busco_analysis/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.TD2.pep.fasta", specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"])),
-        rule_all_input_list.append(expand("busco_analysis/{specie}/BUSCO_prot_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNs", specie=config["specie"],ref=config["stringtie_guide_opts"],intron=config["minimap2_max_intron"], threshold=config["operon_threshold"]))
+        rule_all_input_list.extend(expand("TD2_results/{specie}/{gtf_name}.fasta.TD2.genome.gff3",
+                gtf_name = NAMES , specie=config["specie"])),
+        rule_all_input_list.extend(expand("busco_analysis/{specie}/{gtf_name}.TD2.pep.fasta",
+                gtf_name = NAMES , specie=config["specie"])),
+        rule_all_input_list.extend(expand("busco_analysis/{specie}/BUSCO_prot_{gtf_name}",
+                gtf_name = NAMES , specie=config["specie"]))
         if config["reference_annot"] not in (None, [], ""):
-            rule_all_input_list.append(expand("busco_analysis/{specie}/{specie}_LRannot_REF.pep.fasta", specie=config["specie"]))
+            rule_all_input_list.extend(expand("busco_analysis/{specie}/{specie}_LRannot_REF.pep.fasta", specie=config["specie"]))
         
     return rule_all_input_list

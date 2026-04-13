@@ -74,5 +74,8 @@ run_expression_matrix: True
 # Mean length of long-reads (to use for expression matrix)
 length: 860
 
+# Absolute path to additional GTF file to use on TD2 and Expression matrix
+extraGTF: "" #"/data/filosofia1/cristian/ntorres/NEW_CORAL/NEW_OdiBAR_LRannot_guidenone_v10k_gambat1.0_noOPRNs.annotated.edit.gtf"
+
 ####
 #comand to execute it: snakemake --use-conda --snakefile CORAL.smk --cores 8
