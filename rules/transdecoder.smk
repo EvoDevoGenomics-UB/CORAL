@@ -42,8 +42,7 @@ rule run_TransDecoder:
        {input.gtf} \
     "TD2_results/{wildcards.specie}/" \
        {input.db_alias} \
-       "{params.scriptsDIR}" ;\
-    cp -r TD2_results/{wildcards.specie}/{wildcards.gtf_name}.fasta.TD2.genome.gff3 {output.gff3} \
+       "{params.scriptsDIR}" \
     ) 2>&1 | tee {log.log1}
 
     (mkdir -p Gffcompare_results

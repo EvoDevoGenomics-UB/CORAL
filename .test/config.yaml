@@ -53,7 +53,7 @@ stringtie_guide_opts: ["REF", "none"]
 # "none" for creating an annotation without any guide annotation.
 
 # GAMBA-tool options:
-operon_threshold: 1.00
+operon_threshold: 1.0
 
 # Options passed to StringTie for merge annotations:
 stringtie_OpGs_g: '-150'
