@@ -2,18 +2,23 @@
 ## Comparing new annotations againts reference one
 rule run_gffcompare:
     input:
-        ref = REF ,
-        gtf_longest = rules.run_longest_trans_filter.output.filtergtf ,
-        gtf_noOPRNs = rules.run_final_annotation.output.noOPRNs ,
-        gtf_andOPRNs = rules.run_final_annotation.output.andOPRNs
+        ref=REF,
+        gtf_longest=rules.run_longest_trans_filter.output.filtergtf,
+        gtf_noOPRNs=rules.run_final_annotation.output.noOPRNs,
+        gtf_andOPRNs=rules.run_final_annotation.output.andOPRNs
     output:
-        gffcmp_dir = directory("Gffcompare_results/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}"),
-        gffcmp_out = "Gffcompare_results/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNs.annotated.gtf"
+        gffcmp_dir=directory(
+            "Gffcompare_results/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}"
+        ),
+        gffcmp_out="Gffcompare_results/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNs.annotated.gtf"
+    log:
+        "logs/{specie}/log_gffcomapre_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
+    conda:
+        env_file
     params:
-        prefix = "{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}"
-    conda: env_file
-    log: "logs/{specie}/log_gffcomapre_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
-    shell:""" (
+        prefix="{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}"
+    shell:
+        """ (
     if [[ ! -f {input.ref} ]] ; then
         echo \"Error: No reference annotation provided.\" >&2
         exit 1

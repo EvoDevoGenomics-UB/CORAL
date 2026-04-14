@@ -1,12 +1,16 @@
-#Rust tool GAMBA
+# Rust tool GAMBA
 rule build_GAMBA:
-    output: "gamba"
+    output:
+        "gamba"
+    log:
+        "logs/log_build_GAMBA.log"
+    conda:
+        env_file
     params:
-        snakedir = SNAKEDIR,
-        workdir = WORKDIR
-    conda: env_file
-    log: "logs/log_build_GAMBA.log"
-    shell: """
+        snakedir=SNAKEDIR,
+        workdir=WORKDIR
+    shell:
+        """
     (pwd
     cd {params.snakedir}/scripts/gamba-tool
     cargo build --release
@@ -16,21 +20,25 @@ rule build_GAMBA:
     ./{output} --help ) 2>&1 | tee {log}
     """
 
+
 rule run_GAMBA_and_sanatizing:
     input:
-        GAMBA = rules.build_GAMBA.output,
-        gtf = rules.run_stringtie_sample_annotations.output.gtf
+        GAMBA=rules.build_GAMBA.output,
+        gtf=rules.run_stringtie_sample_annotations.output.gtf
     output:
-        file = "GAMBA_results/{specie}/{specie}_{sample}_guide{ref}_v{intron}_operons_found_t{threshold}.tsv",
-        gtfOPRNs = "GAMBA_results/{specie}/{specie}_{sample}_guide{ref}_v{intron}_Operons_t{threshold}.clean.gtf",
-        gtfOpGs = "GAMBA_results/{specie}/{specie}_{sample}_guide{ref}_v{intron}_OperonGenes_t{threshold}.clean.gtf",
-        gtfCLEAN = "GAMBA_results/{specie}/{specie}_{sample}_guide{ref}_v{intron}_opCLEAN_t{threshold}.clean.gtf"
-    params:
-        threshold = config["operon_threshold"]
-    conda: env_file
-    log: "logs/{specie}/{specie}_{sample}_guide{ref}_v{intron}_gambat{threshold}_GAMBA_run.log"
+        file="GAMBA_results/{specie}/{specie}_{sample}_guide{ref}_v{intron}_operons_found_t{threshold}.tsv",
+        gtfOPRNs="GAMBA_results/{specie}/{specie}_{sample}_guide{ref}_v{intron}_Operons_t{threshold}.clean.gtf",
+        gtfOpGs="GAMBA_results/{specie}/{specie}_{sample}_guide{ref}_v{intron}_OperonGenes_t{threshold}.clean.gtf",
+        gtfCLEAN="GAMBA_results/{specie}/{specie}_{sample}_guide{ref}_v{intron}_opCLEAN_t{threshold}.clean.gtf"
+    log:
+        "logs/{specie}/{specie}_{sample}_guide{ref}_v{intron}_gambat{threshold}_GAMBA_run.log"
+    conda:
+        env_file
     threads: config["threads"]
-    shell:"""
+    params:
+        threshold=config["operon_threshold"]
+    shell:
+        """
     gtf_name=$(basename {input.gtf} ".gtf")
     echo "GTF file: $gtf_name"
 

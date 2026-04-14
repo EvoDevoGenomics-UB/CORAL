@@ -1,17 +1,20 @@
 
 rule run_stringtie_sample_annotations:
-    input: 
-        bam = ancient("alignments/{specie}/{specie}_{sample}_reads_aln_v{intron}.sorted.bam")
+    input:
+        bam=ancient("alignments/{specie}/{specie}_{sample}_reads_aln_v{intron}.sorted.bam")
     output:
-        gtf = "sample_annotations/{specie}/{specie}_{sample}_guide{ref}_v{intron}.gtf"
-    params:
-        opts = config["stringtie_opts"],
-        strand = config["stringtie_strand"],
-        ref_annot = REF
-    conda: env_file
-    log: "logs/{specie}/log_stringtie_annotation_{specie}_{sample}_guide{ref}_v{intron}.log"
+        gtf="sample_annotations/{specie}/{specie}_{sample}_guide{ref}_v{intron}.gtf"
+    log:
+        "logs/{specie}/log_stringtie_annotation_{specie}_{sample}_guide{ref}_v{intron}.log"
+    conda:
+        env_file
     threads: config["threads"]
-    shell:"""
+    params:
+        opts=config["stringtie_opts"],
+        strand=config["stringtie_strand"],
+        ref_annot=REF
+    shell:
+        """
         (mkdir -p sample_annotations ; mkdir -p sample_annotations/{wildcards.specie} ;
         input_guide=\"{wildcards.ref}\"
         stringtie --version
