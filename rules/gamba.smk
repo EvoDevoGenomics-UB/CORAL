@@ -24,7 +24,7 @@ rule build_GAMBA:
 rule run_GAMBA_and_sanatizing:
     input:
         GAMBA=rules.build_GAMBA.output,
-        gtf=rules.run_stringtie_sample_annotations.output.gtf
+        gtf=ancient(rules.run_stringtie_sample_annotations.output.gtf)
     output:
         file="GAMBA_results/{specie}/{specie}_{sample}_guide{ref}_v{intron}_operons_found_t{threshold}.tsv",
         gtfOPRNs="GAMBA_results/{specie}/{specie}_{sample}_guide{ref}_v{intron}_Operons_t{threshold}.clean.gtf",

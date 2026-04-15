@@ -133,7 +133,7 @@ rule run_gCLEAN_annotation:
     rm GTFfile.$var_name.tmp ;
 
     echo "  Final merge CLEAN done" ; \
-    grep 'StringTie    transcript' {output.cleanfinal} | wc -l ) 2>&1 | tee {log}
+    grep 'StringTie	transcript' {output.cleanfinal} | wc -l ) 2>&1 | tee {log}
     """
 
 
