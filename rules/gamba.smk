@@ -36,13 +36,14 @@ rule run_GAMBA_and_sanatizing:
         env_file
     threads: config["threads"]
     params:
-        threshold=config["operon_threshold"]
+        threshold=config["operon_threshold"],
+        threshold2=config["operon_threshold"]*3
     shell:
         """
     gtf_name=$(basename {input.gtf} ".gtf")
     echo "GTF file: $gtf_name"
 
-    ./{input.GAMBA} -f {input.gtf} --threshold {params.threshold} -o "GAMBA_results/{wildcards.specie}" --log {log}
+    ./{input.GAMBA} -f {input.gtf} --threshold {params.threshold} --monoexonic-t {params.threshold2} -o "GAMBA_results/{wildcards.specie}" --log {log}
     
     awk \'{{if($4>$5) print $1,$2,$3,$5,$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18 ; \
     else print $0}}\' GAMBA_results/{wildcards.specie}/${{gtf_name}}_Operons_t{params.threshold}.gtf > ${{gtf_name}}_Operons_t{params.threshold}.tmp ; \

@@ -19,7 +19,7 @@ rule run_longest_trans_filter:
 
 rule run_obtaining_fasta:
     input:
-        genome=rules.check_genome_format.output.genome,
+        genome=ancient(rules.check_genome_format.output.genome),
         gtf=rules.run_longest_trans_filter.output.filtergtf,
         gtf_noOPRNs=rules.run_final_annotation.output.noOPRNs,
         gtf_andORPNs=rules.run_final_annotation.output.andOPRNs
@@ -60,7 +60,7 @@ rule busco_download_lineage:
 
 rule run_busco_analyses:
     input:
-        lin_dir=rules.busco_download_lineage.output.lin_dir,
+        lin_dir=ancient(rules.busco_download_lineage.output.lin_dir),
         fa_longtrans=rules.run_obtaining_fasta.output.fasta,
         fa_noOPRNs=rules.run_obtaining_fasta.output.fasta_noOPRNs,
         fa_andOPRNs=rules.run_obtaining_fasta.output.fasta_andOPRNs
@@ -94,8 +94,8 @@ rule run_busco_analyses:
 
 rule run_busco_reference_annot:
     input:
-        lin_dir=rules.busco_download_lineage.output.lin_dir,
-        genome=rules.check_genome_format.output.genome,
+        lin_dir=ancient(rules.busco_download_lineage.output.lin_dir),
+        genome=ancient(rules.check_genome_format.output.genome),
         ref_annot=REF
     output:
         fasta="busco_analysis/{specie}/{specie}_LRannot_REF.fasta",

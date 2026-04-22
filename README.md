@@ -79,7 +79,8 @@ The CORAL pipeline creates several folders, including:
 * **GAMBA_results**: contians the output of the GAMBA tool for each sample (i.e. the operons found on each sample).
 * **busco_downloads**: contians the BUSCO database used for the BUSCO analysis.
 * **busco_analysis**: contains the BUSCO results for the main consensus annotaitons.
-* **Expression_matix**: contains the outputs generated for create the expression matrix of the '_andOPRNs_' consensus annotation.
+* **TD2_results**: contains the results from TransDecoder analysis.
+* **Expression_matix**: contains the outputs generated for create the expression matrix of the '_noOPRNs_' consensus annotation and the Reference annotation if provided.
 
 ## Running specific rules
 
@@ -90,6 +91,7 @@ There is the posibility to run specific parts of CORAL instead of the full workf
 - Consensus annotation: rule 'do_consensus_annotations'
 - BUSCO analysis: rule 'do_busco_analyses'
 - Gffcompare analysis: rule 'do_gffcompare'
+- TransDecoder analysis: rule 'do_transdecoder'
 - Expression matrix creation: rule 'do_expression_matrix'
 
 To run any of those parts just run snakemake specifying the rule name. Example:
@@ -100,4 +102,4 @@ To run any of those parts just run snakemake specifying the rule name. Example:
 
 If you use CORAL in your research, please cite the following publication:
 
-- NTorres-Aguila, N.P., Cassà, B., and Canestro, C. (2025). <b>CORAL: Accurate annotation of compact genomes using long-read RNA-seq, demonstrated in _Oikopleura dioica_</b>. bioRxiv. [DOI: 10.64898/2025.12.04.692336](https://doi.org/10.64898/2025.12.04.692336)
+- Torres-Aguila, N.P., Cassà, B., and Canestro, C. (2025). <b>CORAL: Accurate annotation of compact genomes using long-read RNA-seq, demonstrated in _Oikopleura dioica_</b>. bioRxiv. [DOI: 10.64898/2025.12.04.692336](https://doi.org/10.64898/2025.12.04.692336)

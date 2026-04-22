@@ -39,7 +39,8 @@ rule build_minimap_index:
 
 rule prepare_fastqs:
     input:
-        fastq=lambda wc: SAMPLE_TO_FASTQ[wc.sample]
+        fastq=lambda wc: SAMPLE_TO_FASTQ[wc.sample],
+        stats=ancient("logs/{sample}_stats_input_reads.txt")
     output:
         fq=temp("tmp/{sample}_concatenated.fastq"),
         flq="processed_reads/{sample}_full_length_reads.clean.fq"
@@ -61,33 +62,39 @@ rule prepare_fastqs:
     if [ -s {output.flq} ] ; then 
         echo "{output.flq} already exists, skiped..."
     else
-        if [ $(echo {input} | wc -w) -ge 2 ]; then
+        if [ $(echo {input.fastq} | wc -w) -ge 2 ]; then
             echo "Concatenating FASTQ files for {wildcards.sample}..."
-            seqkit seq {input} -m 50 -o {output.fq}
+            seqkit seq {input.fastq} -m 50 -o {output.fq}
         else
             echo "Single FASTQ for {wildcards.sample}, copying..."
-            #ln -sf {input} {output.fq}
-            seqkit seq {input} -m 50 -o {output.fq}
-        fi 
-        if [[ "{params.pc}" == "True" ]]; then
-            echo "Performing pychopper of {wildcards.sample}..."
-            mkdir -p processed_reads/Reports/
-            ( head -3 {output.fq} ; \
-            pychopper -r processed_reads/Reports/{wildcards.sample}_report.pdf \
-            -S processed_reads/Reports/{wildcards.sample}_statistics.tsv \
-            -u processed_reads/{wildcards.sample}_unclassified.fq \
-            -w processed_reads/{wildcards.sample}_rescued.fq \
-            {params.pc_opts} {output.fq} processed_reads/{wildcards.sample}_full_length_reads.fq \
-            ) 2> {log.log2}
-            seqkit seq -Q {params.seqkitQ} -m {params.min_seqkit} \
-            processed_reads/{wildcards.sample}_full_length_reads.fq processed_reads/{wildcards.sample}_rescued.fq > {output.flq}
-            gzip processed_reads/{wildcards.sample}_full_length_reads.fq
-            gzip processed_reads/{wildcards.sample}_unclassified.fq
-            gzip processed_reads/{wildcards.sample}_rescued.fq
-        else
-            seqkit seq -Q {params.seqkitQ} -m {params.min_seqkit} {output.fq} > {output.flq}
+            seqkit seq {input.fastq} -m 50 -o {output.fq}
         fi
-    fi ) 2> {log.log1}
+        TYPE=$(tail -1 {input.stats} | awk '{{print $3}}')
+        if [[ "${{TYPE}}" == "DNA" ]] ; then
+            if [[ "{params.pc}" == "True" ]]; then
+                echo "Performing pychopper of {wildcards.sample}..."
+                mkdir -p processed_reads/Reports/
+                ( head -3 {output.fq} ; \
+                pychopper -r processed_reads/Reports/{wildcards.sample}_report.pdf \
+                -S processed_reads/Reports/{wildcards.sample}_statistics.tsv \
+                -u processed_reads/{wildcards.sample}_unclassified.fq \
+                -w processed_reads/{wildcards.sample}_rescued.fq \
+                {params.pc_opts} {output.fq} processed_reads/{wildcards.sample}_full_length_reads.fq \
+                ) 2> {log.log2}
+                seqkit seq -Q {params.seqkitQ} -m {params.min_seqkit} \
+                processed_reads/{wildcards.sample}_full_length_reads.fq processed_reads/{wildcards.sample}_rescued.fq -o {output.flq}
+                gzip processed_reads/{wildcards.sample}_full_length_reads.fq
+                gzip processed_reads/{wildcards.sample}_unclassified.fq
+                gzip processed_reads/{wildcards.sample}_rescued.fq
+            else
+                echo "Performing Seqkit of {wildcards.sample}..."
+                seqkit seq -Q {params.seqkitQ} -m {params.min_seqkit} {output.fq} -o {output.flq}
+            fi
+        else
+            echo "Performing Seqkit of {wildcards.sample}..."
+            seqkit seq -Q {params.seqkitQ} -m {params.min_seqkit} {output.fq} -o {output.flq}
+        fi
+    fi ) 2>&1 | tee {log.log1}
     """
 
 
@@ -109,7 +116,7 @@ rule run_minimap2:
     shell:
         """
     TYPE=$(tail -1 {input.stats} | awk '{{print $3}}')
-    (if "$TYPE" == "RNA" ; then
+    (if [[ "$TYPE" == "RNA" ]] ; then
         minimap2 -t {threads} {params.opts} -uf -G {params.max_intron} {input.index} {input.fastq} > {output.sam} ; \
     else
         minimap2 -t {threads} {params.opts} -G {params.max_intron} {input.index} {input.fastq} > {output.sam} ; \
