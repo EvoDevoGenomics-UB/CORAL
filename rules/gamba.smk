@@ -37,11 +37,12 @@ rule run_GAMBA_and_sanatizing:
     threads: config["threads"]
     params:
         threshold=config["operon_threshold"],
-        threshold2=config["operon_threshold"]*3
+        threshold2=float(config["operon_threshold"])*3
     shell:
         """
     gtf_name=$(basename {input.gtf} ".gtf")
     echo "GTF file: $gtf_name"
+    echo "Command: ./{input.GAMBA} -f {input.gtf} --threshold {params.threshold} --monoexonic-t {params.threshold2} -o "GAMBA_results/{wildcards.specie}" --log {log}"
 
     ./{input.GAMBA} -f {input.gtf} --threshold {params.threshold} --monoexonic-t {params.threshold2} -o "GAMBA_results/{wildcards.specie}" --log {log}
     
@@ -58,4 +59,21 @@ rule run_GAMBA_and_sanatizing:
     gffread --sort-alpha -F -T -o {output.gtfCLEAN} ${{gtf_name}}_opCLEAN_t{params.threshold}.tmp
 
     rm ${{gtf_name}}*{params.threshold}.tmp
+    """
+
+
+rule run_gCLEAN_longest_trans_filter:
+    input:
+        gtf = "GAMBA_results/{specie}/{specie}_{sample}_guide{ref}_v{intron}_opCLEAN_t{threshold}.clean.gtf"
+    output:
+        gtf = "GAMBA_results/{specie}/{specie}_{sample}_guide{ref}_v{intron}_opCLEAN_t{threshold}.clean_longest_trans_only.gtf"
+    log:
+        "GAMBA_results/{specie}/{specie}_{sample}_guide{ref}_v{intron}_opCLEAN_t{threshold}.clean_LongestTransFilter.log"
+    conda:
+        env_file
+    threads: config["threads"]
+    params:
+        snakedir=SNAKEDIR
+    shell: """
+        python {params.snakedir}/scripts/Longest_transcript_filter.py {input.gtf}
     """

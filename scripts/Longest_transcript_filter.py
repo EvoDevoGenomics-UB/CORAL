@@ -13,7 +13,7 @@ if len(sys.argv) != 2:
 
 # Get the input GTF file from the command line
 gtf_file = sys.argv[1]
-log_file = os.path.splitext(gtf_file)[0] + "_LongestTransFilte.log"
+log_file = os.path.splitext(gtf_file)[0] + "_LongestTransFilter.log"
 
 # Ensure the file exists
 if not os.path.isfile(gtf_file):
@@ -64,16 +64,22 @@ for chrom in gene_transcripts:
         max_len = 0
         longest_tx = None
         opg_count = 0
+        bestfpkm = 0
+        bestexons = 0
         for tx in tx_list:
             if re.search("^OpG", tx.id):
                 longest_transcripts.append(tx.id)
                 opg_count += 1
         if opg_count == 0:
             for tx in tx_list:
-                length = db.children_bp(transcript, child_featuretype='exon')  # sum of exon lengths
-                if length > max_len:
+                length = db.children_bp(tx, child_featuretype='exon')  # sum of exon lengths
+                expfpkm = float(tx.attributes.get("FPKM", [0])[0])
+                exonnum = sum(1 for _ in db.children(tx, featuretype='exon'))
+                if (length > max_len - 200 and expfpkm > bestfpkm) or (length > max_len * 1.5) or (exonnum > bestexons and length > max_len + 100 ):
                     max_len = length
                     longest_tx = tx
+                    bestfpkm = expfpkm
+                    bestexons = exonnum
         if longest_tx:
             if longest_tx.id not in longest_transcripts:
                 longest_transcripts.append(longest_tx.id)

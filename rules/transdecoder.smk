@@ -94,7 +94,7 @@ rule run_obtaining_pep_TD2:
 
 rule run_busco_prot:
     input:
-        lin_dir=rules.busco_download_lineage.output.lin_dir,
+        lin_dir=ancient(rules.busco_download_lineage.output.lin_dir),
         pep_TD2=rules.run_obtaining_pep_TD2.output.pep_TD2
     output:
         out_pep_TD2=directory("busco_analysis/{specie}/BUSCO_prot_{gtf_name}")
@@ -110,8 +110,8 @@ rule run_busco_prot:
 
 rule run_busco_prot_ref:
     input:
-        lin_dir=rules.busco_download_lineage.output.lin_dir,
-        genome=rules.check_genome_format.output.genome,
+        lin_dir=ancient(rules.busco_download_lineage.output.lin_dir),
+        genome=ancient(rules.check_genome_format.output.genome),
         gtf_ref=REF
     output:
         pep_ref="busco_analysis/{specie}/{specie}_LRannot_REF.pep.fasta",
