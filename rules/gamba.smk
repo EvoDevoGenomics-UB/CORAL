@@ -60,27 +60,3 @@ rule run_GAMBA_and_sanatizing:
 
     rm ${{gtf_name}}*{params.threshold}.tmp
     """
-
-
-rule run_gCLEAN_filter:
-    input:
-        gtf = "GAMBA_results/{specie}/{specie}_{sample}_guide{ref}_v{intron}_opCLEAN_t{threshold}.clean.gtf",
-        bam=ancient("alignments/{specie}/{specie}_{sample}_reads_aln_v{intron}.sorted.bam")
-    output:
-        gtf = "GAMBA_results/{specie}/{specie}_{sample}_guide{ref}_v{intron}_opCLEAN_t{threshold}.clean.filter.gtf"
-    log:
-        "GAMBA_results/{specie}/{specie}_{sample}_guide{ref}_v{intron}_opCLEAN_t{threshold}.clean.filter.log"
-    conda:
-        env_file
-    threads: config["threads"]
-    params:
-        freq=config["stringtie_freq"],
-        g_param='-50',
-        opts=config["stringtie_merge_opts"]
-    shell: """
-       (stringtie --merge -p {threads} \
-        -c 2 -F 1 -T 0.5 -m 200 -g {params.g_param} -f {params.freq} \
-        -l {wildcards.sample}g -o {output.gtf}.tmp {input.gtf} ; \
-        stringtie -G {output.gtf}.tmp -e -o {output.gtf} {input.bam} ) 2>&1 | tee {log}
-        rm {output.gtf}.tmp
-    """
