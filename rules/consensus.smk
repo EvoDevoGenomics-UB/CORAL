@@ -9,7 +9,7 @@ for SAMPLE in SAMPLES:
         "GAMBA_results/{{specie}}/{{specie}}_{}_guide{{ref}}_v{{intron}}_OperonGenes_t{{threshold}}.clean.gtf".format(SAMPLE)
     )
     gtfsclean_samples.append(
-        "GAMBA_results/{{specie}}/{{specie}}_{}_guide{{ref}}_v{{intron}}_opCLEAN_t{{threshold}}.clean_longest_trans_only.gtf".format(SAMPLE)
+        "GAMBA_results/{{specie}}/{{specie}}_{}_guide{{ref}}_v{{intron}}_opCLEAN_t{{threshold}}.clean.filter.gtf".format(SAMPLE)
     )
 
 # fmt: off
