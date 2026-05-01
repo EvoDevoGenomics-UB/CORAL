@@ -17,7 +17,7 @@ genome_fasta: "/$USER/home/data/reference_genome.fa"
 # Absolute path to reference annotation (optional)
 reference_annot: []
 # Run a Gffcomapre with the reference?
-run_gffcomapre: False
+run_gffcompare: False
 
 ### FASTQ files :
 # OPTION 1: SAMPLESHEET

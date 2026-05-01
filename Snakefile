@@ -33,7 +33,7 @@ include: "rules/sample-annot.smk"
 include: "rules/gamba.smk"
 include: "rules/consensus.smk"
 include: "rules/busco.smk"
-if config["run_gffcomapre"] == True :
+if config["run_gffcompare"] == True :
     include: "rules/gffcmp.smk"
 include: "rules/exp-matrix.smk"
 include: "rules/transdecoder.smk"

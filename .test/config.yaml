@@ -15,7 +15,7 @@ specie: ["CORAL"]
 # Input genome
 genome_fasta: "/github/workspace/.test/data/genome.fa.gz"
 # Run a Gffcomapre with the reference?
-run_gffcomapre: True
+run_gffcompare: True
 # Absolute path to reference annotation (optional)
 reference_annot: "/github/workspace/.test/data/ref_annotation.gtf"
 
