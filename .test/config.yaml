@@ -15,7 +15,7 @@ specie: ["CORAL"]
 # Input genome
 genome_fasta: "/github/workspace/.test/data/genome.fa.gz"
 # Run a Gffcomapre with the reference?
-run_gffcomapre: True
+run_gffcompare: True
 # Absolute path to reference annotation (optional)
 reference_annot: "/github/workspace/.test/data/ref_annotation.gtf"
 
@@ -53,7 +53,7 @@ stringtie_guide_opts: ["REF", "none"]
 # "none" for creating an annotation without any guide annotation.
 
 # GAMBA-tool options:
-operon_threshold: 1.00
+operon_threshold: 1.0
 
 # Options passed to StringTie for merge annotations:
 stringtie_OpGs_g: '-150'
@@ -73,6 +73,9 @@ lineages: metazoa_odb10
 run_expression_matrix: True
 # Mean length of long-reads (to use for expression matrix)
 length: 860
+
+# Absolute path to additional GTF file to use on TD2 and Expression matrix
+extraGTF: "" #"/data/filosofia1/cristian/ntorres/NEW_CORAL/NEW_OdiBAR_LRannot_guidenone_v10k_gambat1.0_noOPRNs.annotated.edit.gtf"
 
 ####
 #comand to execute it: snakemake --use-conda --snakefile CORAL.smk --cores 8

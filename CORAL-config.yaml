@@ -17,7 +17,7 @@ genome_fasta: "/$USER/home/data/reference_genome.fa"
 # Absolute path to reference annotation (optional)
 reference_annot: []
 # Run a Gffcomapre with the reference?
-run_gffcomapre: False
+run_gffcompare: False
 
 ### FASTQ files :
 # OPTION 1: SAMPLESHEET
@@ -57,13 +57,18 @@ stringtie_guide_opts: ["none"]
 #"none" for creating an annotation without any guide annotation.
   
 # GAMBA-tool options:
-operon_threshold: 1.00
+operon_threshold: 1.0
 
 # Options passed to StringTie for merge annotations:
 stringtie_OpGs_g: '-150'
 stringtie_freq: 0.2
 stringtie_g: '-60'
-stringtie_merge_opts: "-F 0.5 -T 0 -c 2"
+stringtie_merge_opts: "-F 0.5 -T 0 -c 1.5"
+
+#TransDecoder2 and mmseqs2 paramters:
+run_TransDecoder: True
+db_name: "UniProtKB/Swiss-Prot"
+db_alias: "swissprot"
 
 #TransDecoder2 and mmseqs2 paramters:
 run_TransDecoder: True
@@ -78,5 +83,8 @@ run_expression_matrix: True
 # Mean length of long-reads (to use for expression matrix)
 length: 860
 
+# Absolute path to additional GTF file to use on TD2 and Expression matrix
+extraGTF: ""
+
 ###
-#comand to execute it: snakemake --use-conda --snakefile CORAL.smk --cores 8
+#comand to execute it: snakemake --use-conda --snakefile ./CORAL/Snakefile --cores 8
