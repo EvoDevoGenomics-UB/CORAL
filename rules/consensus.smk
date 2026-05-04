@@ -94,6 +94,7 @@ rule run_gCLEAN_annotation:
     params:
         freq=config["stringtie_freq"],
         g_param=config["stringtie_g"],
+        g_param1=int(config["stringtie_g"]) -15 ,
         g_param0=int(config["stringtie_OpGs_g"]) ,
         opts=config["stringtie_merge_opts"]
     shell:
@@ -103,31 +104,34 @@ rule run_gCLEAN_annotation:
 
     echo "Performing Step1..."
     stringtie --merge annotations/{wildcards.specie}/List_merge_opCLEAN.$var_name.txt \
-     -l g -f {params.freq} -c 25 -F 14.0 -T 3.0 -m 200 -g {params.g_param0} -o GTFfileStrict.$var_name.tmp -p {threads}; \
+     -l g -f {params.freq} {params.opts} -m 200 -g {params.g_param} -o GTFfileLose.$var_name.tmp -p {threads}; \
     echo " Step1 1/3 done"
     
     stringtie --merge annotations/{wildcards.specie}/List_merge_opCLEAN.$var_name.txt \
-     -l g {params.opts} -m 3000 -g {params.g_param} -o GTFfileLongTrans.$var_name.tmp -p {threads}; \
+     -l g -f {params.freq} -c 0 -F 0 -T 0 -m 2800 -g {params.g_param1} -o GTFfileLongTrans.$var_name.tmp -p {threads}; \
     echo " Step1 2/3 done"
     
     stringtie --merge annotations/{wildcards.specie}/List_merge_opCLEAN.$var_name.txt \
-     -l g -f {params.freq} {params.opts} -m 200 -g {params.g_param} -o GTFfileLose.$var_name.tmp -p {threads}; \
+     -l g -f {params.freq} -c 25 -F 14.0 -T 3.0 -m 200 -g {params.g_param0} -o GTFfileStrict.$var_name.tmp -p {threads}; \
     echo " Step1 3/3 done"
     
     echo "Performing Step2..."
     for gtfFile in GTFfileStrict GTFfileLongTrans GTFfileLose ; do \
-        gffcompare -r {input.opgsgtf} ${{gtfFile}}.$var_name.tmp -o filter_${{gtfFile}}_$var_name
-        awk '{{if($3=="=" || $3=="c" || $3=="k" || $3=="j") print $5}}' filter_${{gtfFile}}_$var_name.${{gtfFile}}.$var_name.tmp.tmap > filter_${{gtfFile}}.$var_name.list.tmp
-        gffread --nids filter_${{gtfFile}}.$var_name.list.tmp ${{gtfFile}}.$var_name.tmp -T -o ${{gtfFile}}.$var_name.clean.tmp
-        rm filter*${{gtfFile}}*${{var_name}}* ; \
-        rm ${{gtfFile}}.$var_name.tmp ; \
-        echo "${{gtfFile}}.$var_name.clean.tmp"
+        if [ $(grep 'StringTie	transcript' {input.oprngtf} | wc -l ) -ge 1 ] ; then
+            gffcompare -r {input.opgsgtf} ${{gtfFile}}.$var_name.tmp -o filter_${{gtfFile}}_$var_name
+            awk '{{if($3=="=" || $3=="c" || $3=="m" || $3=="n") print $5}}' filter_${{gtfFile}}_$var_name.${{gtfFile}}.$var_name.tmp.tmap > filter_${{gtfFile}}.$var_name.list.tmp
+            gffread --nids filter_${{gtfFile}}.$var_name.list.tmp ${{gtfFile}}.$var_name.tmp -T -o ${{gtfFile}}.$var_name.clean.tmp
+            rm filter*${{gtfFile}}*${{var_name}}* ; \
+            rm ${{gtfFile}}.$var_name.tmp ; \
+        else
+            cp ${{gtfFile}}.$var_name.tmp ${{gtfFile}}.$var_name.clean.tmp
+        fi
     done
     echo " Step2 1/3 done"
     
     for gtfFile in GTFfileLongTrans ; do \
-        gffcompare -r ${{gtfFile}}.$var_name.clean.tmp GTFfileStrict.$var_name.clean.tmp -o filter_${{gtfFile}}_$var_name
-        awk '{{if($3=="=" || $3=="c" ||$3=="j") print $2}}' filter_${{gtfFile}}_$var_name.GTFfileStrict.$var_name.clean.tmp.tmap > filter_${{gtfFile}}.$var_name.list.tmp
+        gffcompare -r GTFfileStrict.$var_name.clean.tmp ${{gtfFile}}.$var_name.clean.tmp -o filter_${{gtfFile}}_$var_name
+        awk '{{if($3=="=" || $3=="k" || $3=="j" || $3=="m" || $3=="n") print $5}}' filter_${{gtfFile}}_$var_name.${{gtfFile}}.$var_name.clean.tmp.tmap > filter_${{gtfFile}}.$var_name.list.tmp
         gffread --nids filter_${{gtfFile}}.$var_name.list.tmp ${{gtfFile}}.$var_name.clean.tmp -T -o ${{gtfFile}}.$var_name.clean2.tmp
         rm filter*${{gtfFile}}*${{var_name}}* ; \
     done
@@ -136,7 +140,7 @@ rule run_gCLEAN_annotation:
     for gtfFile in GTFfileLose ; do \
         for ref in GTFfileLongTrans.$var_name.clean2.tmp GTFfileStrict.$var_name.clean.tmp ; do \
             gffcompare ${{gtfFile}}.$var_name.clean.tmp -r ${{ref}} -o filter_${{ref}}_$var_name
-            awk '{{if($3=="=" || $3=="k" ||$3=="j") print $5}}' filter_${{ref}}_$var_name.${{gtfFile}}.$var_name.clean.tmp.tmap > filter_${{gtfFile}}_${{ref}}.$var_name.list.tmp
+            awk '{{if($3=="=" || $3=="j" || $3=="k" || $3=="m" || $3=="n") print $5}}' filter_${{ref}}_$var_name.${{gtfFile}}.$var_name.clean.tmp.tmap > filter_${{gtfFile}}_${{ref}}.$var_name.list.tmp
         done
         cat filter_${{gtfFile}}_*.$var_name.list.tmp | sort -u > filter_${{gtfFile}}.$var_name.list.tmp
         gffread --nids filter_${{gtfFile}}.$var_name.list.tmp ${{gtfFile}}.$var_name.clean.tmp -T -o ${{gtfFile}}.$var_name.clean2.tmp
@@ -146,13 +150,13 @@ rule run_gCLEAN_annotation:
 
     echo "Performing Step3..."
     stringtie --merge GTFfileStrict.$var_name.clean.tmp GTFfileLongTrans.$var_name.clean2.tmp GTFfileLose.$var_name.clean2.tmp \
-      -l g -F 0 -T 0 -c 0 -m 200 -g {params.g_param0} -o GTFfile.$var_name.tmp -p {threads}
+      -l g -F 0 -T 0 -c 0 -m 200 -g {params.g_param} -o GTFfile.$var_name.tmp -p {threads}
     echo " Step3 1/2 done"
     if [ $(grep 'StringTie	transcript' {input.oprngtf} | wc -l ) -ge 1 ] ; then
         gffcompare -r {input.oprngtf} GTFfile.$var_name.tmp -o filter_$var_name
-        awk '{{if($3=="=") print $5}}' filter_$var_name.GTFfile.$var_name.tmp.tmap > filter.$var_name.list.tmp
+        awk '{{if($3=="=" || $3=="c" ) print $5}}' filter_$var_name.GTFfile.$var_name.tmp.tmap > filter.$var_name.list.tmp
         gffcompare -r {input.opgsgtf} GTFfile.$var_name.tmp -o filter2_$var_name
-        awk '{{if($3=="=" || $3=="c" || $3=="k" || $3=="j") print $5}}' filter2_$var_name.GTFfile.$var_name.tmp.tmap > filter2.$var_name.list.tmp
+        awk '{{if($3=="=" || $3=="c" || $3=="m" || $3=="n" ) print $5}}' filter2_$var_name.GTFfile.$var_name.tmp.tmap > filter2.$var_name.list.tmp
         cat filter.$var_name.list.tmp filter2.$var_name.list.tmp > filter3.$var_name.list.tmp
         gffread --nids filter3.$var_name.list.tmp GTFfile.$var_name.tmp -T -o {output.cleanfinal}
         rm filter*${{var_name}}*
