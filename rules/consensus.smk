@@ -226,6 +226,7 @@ rule run_final_annotation:
      echo "  Final CLEAN-andOPRNs not created because of lack of OPRNs..."
     fi ) 2>&1 | tee {log.log2}
     """
+# fmt: on
 
 # Obtaining coverage of final annotation
 rule run_recover_coverage:
