@@ -20,10 +20,10 @@ rule run_stringtie_sample_annotations:
         stringtie --version
         if [ $input_guide == "REF" ] ; then
             echo \"Comand: stringtie {params.strand} -L -R -p {threads} {params.opts} -G {params.ref_annot} -o {output.gtf} {input.bam}\"
-            stringtie {params.strand} -L -R -p {threads} {params.opts} -G {params.ref_annot} -o {output.gtf} {input.bam}
+            stringtie {params.strand} -L -R -p {threads} {params.opts} -G {params.ref_annot} -l {wildcards.sample}g -o {output.gtf} {input.bam}
             echo \"Stringtie {wildcards.ref} guided gtf created: {output.gtf}\"
         else
-            echo \"Comand: stringtie {params.strand} -L -R -p {threads} {params.opts} -o {output.gtf} {input.bam}\"
+            echo \"Comand: stringtie {params.strand} -L -R -p {threads} {params.opts} -l {wildcards.sample}g -o {output.gtf} {input.bam}\"
             stringtie {params.strand} -L -R -p {threads} {params.opts} -o {output.gtf} {input.bam} ; \
             echo \"Stringtie no-guide no-assembly gtf created: {output.gtf}\"
         fi ) 2> {log}
