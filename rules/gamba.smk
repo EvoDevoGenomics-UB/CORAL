@@ -37,7 +37,7 @@ rule run_GAMBA_and_sanatizing:
     threads: config["threads"]
     params:
         threshold=config["operon_threshold"],
-        threshold2=float(config["operon_threshold"])*3
+        threshold2=float(config["operon_threshold"])*4
     shell:
         """
     gtf_name=$(basename {input.gtf} ".gtf")
