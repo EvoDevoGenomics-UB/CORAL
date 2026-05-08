@@ -40,6 +40,7 @@ rule run_TransDecoder:
     params:
         scriptsDIR=path.join(SNAKEDIR, "scripts"),
         prefix="{gtf_name}_TD2",
+        TD2options=config["TD2options"],
         gtf_ref=REF
     shell:
         """
@@ -51,6 +52,7 @@ rule run_TransDecoder:
     "TD2_results/{wildcards.specie}/" \
        {input.db_alias} \
        "{params.scriptsDIR}" \
+       {params.TD2options} \
     ) 2>&1 | tee {log.log1}
 
     (mkdir -p Gffcompare_results
