@@ -149,16 +149,113 @@ for (chrom, strand), op_trans_list in chr_to_operons.items():
             continue
         prefinal_pairs.append((op_gene_id, trans_gene_id))
         seen_transcripts.add(trans_gene_id)
-    
+
 # Count how many transcripts each operon contains
 operon_counts_def = Counter(operon for operon, _ in prefinal_pairs)
 # Keep only operons that contain **two or more** transcripts
-out_operons = {operon for operon, count in operon_counts_def.items() if count < 2}
+good_operons = {operon for operon, count in operon_counts_def.items() if count > 1}
+
+def merged_exon_length(db, transcripts):
+    exons = []
+    # Recoger todos los exones
+    for transcript in transcripts:
+        for exon in db.children(transcript, featuretype='exon', order_by='start'):
+            exons.append((exon.start, exon.end))
+
+    if not exons:
+        return 0
+
+    # Ordenar por inicio
+    exons.sort(key=lambda x: x[0])
+
+    # Fusionar solapamientos
+    merged = [exons[0]]
+
+    for current_start, current_end in exons[1:]:
+        last_start, last_end = merged[-1]
+
+        # Si se solapan
+        if current_start <= last_end:
+            merged[-1] = (
+                last_start,
+                max(last_end, current_end)
+            )
+        else:
+            merged.append((current_start, current_end))
+
+    # Calcular longitud total
+    total_length = sum(end - start + 1 for start, end in merged)
+
+    return total_length
+
+def max_length(transcripts):
+    start = min(t.start for t in transcripts)
+    end = max(t.end for t in transcripts)
+    lenght = end - start +1
+    return lenght
+
+operon_to_transcripts = defaultdict(list)
+for operon, gene in prefinal_pairs:
+    if operon in good_operons:
+        operon_to_transcripts[operon].append(gene)
+
+valid_operons = set()
+invalid_operons = set()
+
+for operon_id, gene_ids in operon_to_transcripts.items():
+    # Get operon transcript(s)
+    operon_transcripts = [
+        t for t in db.features_of_type("transcript")
+        if t.attributes['gene_id'][0] == operon_id
+    ]
+    if not operon_transcripts:
+        continue
+
+    max_operon_len = 0
+    max_operon_exon_len = 0
+    # Longitud total del operón
+    max_operon_len = max_length(operon_transcripts)
+    # Longitud exónica NO redundante
+    max_operon_exon_len = merged_exon_length(db, operon_transcripts)
+
+    # Sum lengths of contained transcripts
+    total_len = 0
+    total_ex_len = 0
+    tolerance = 0
+    for gene_id in gene_ids:
+        sub_transcripts = [
+            t for t in db.features_of_type("transcript")
+            if t.attributes['gene_id'][0] == gene_id
+        ]
+        total_len += max_length(sub_transcripts)
+        total_ex_len += merged_exon_length(db,sub_transcripts)
+    
+    tolerance = (50 * len(gene_ids))
+    if (total_len + tolerance) >= (max_operon_len * 0.6) or (max_operon_exon_len*0.6 < total_ex_len < max_operon_exon_len + tolerance):
+        valid_operons.add(operon_id)
+    else:
+        invalid_operons.add(operon_id)
+        logging.warning(
+            f"Operon {operon_id} failed length check: "
+            f"operon_len={max_operon_len}, sum_sub={total_len}, tolerance={tolerance}"
+        )
+
+final_pairs_DEF = [
+    (op, gene)
+    for op, gene in prefinal_pairs
+    if op in valid_operons
+]
+# Count how many transcripts each operon contains
+#operon_counts_def = Counter(operon for operon, _ in prefinal_pairs)
+# Keep only operons that contain **two or more** transcripts
+#out_operons = {operon for operon, count in operon_counts_def.items() if count < 2}
 # Filter out rows where the first column appears in the second column
-final_pairs_DEF = [pair for pair in prefinal_pairs if pair[0] not in out_operons]
+#final_pairs_DEF = [pair for pair in prefinal_pairs if pair[0] not in out_operons]
+
 out_pairs_DEF = [pair for pair in prefinal_pairs if pair not in final_pairs_DEF]
 for x in excluded_pairs :
-    out_pairs_DEF.append(x)
+    if x not in final_pairs_DEF: 
+        out_pairs_DEF.append(x)
 ##########################
 # Write to output file
 with open(output_file, "w") as out_file:
@@ -189,7 +286,8 @@ for transcript in db.features_of_type("transcript"):
         if gene_id in contained_ids:
             gene_to_trans_ids.append(transcript.id)
     else:
-        removed_trans_ids.append(transcript.id)
+        if gene_id in {gene for _, gene in out_pairs_DEF}:
+            removed_trans_ids.append(transcript.id)
 
 # Define output GTF filenames
 operon_gtf_file = out_prefix + "_OPRNvalidation.clean.gtf"

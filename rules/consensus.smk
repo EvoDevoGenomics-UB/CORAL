@@ -32,7 +32,8 @@ rule run_operon_annotation:
     conda:
         env_file
     params:
-        g_param=config["stringtie_OpGs_g"],
+        g_param0=config["stringtie_OpGs_g"],
+        g_param=config["stringtie_g"],
         name="{specie}_guide{ref}_v{intron}_gambat{threshold}",
         snakedir=SNAKEDIR
     shell:
@@ -42,8 +43,9 @@ rule run_operon_annotation:
         if [ -s "$i" ]; then echo "$i" ; fi
     done) \
     > annotations/{wildcards.specie}/List_merge_OpGs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt
+    echo "Perfroming merge of OpGs"
     if [ -s annotations/{wildcards.specie}/List_merge_OpGs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt ] ; then
-        stringtie --merge -l OpG -f 0 -F 0 -T 0 -c 0 -m 200 -g {params.g_param} -o {output.opgenesgtf} annotations/{wildcards.specie}/List_merge_OpGs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt ; \
+        stringtie --merge -l OpG -f 0 -F 0 -T 0 -c 0 -m 200 -g {params.g_param0} -o {output.opgenesgtf} annotations/{wildcards.specie}/List_merge_OpGs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt ; \
         grep 'StringTie	transcript' {output.opgenesgtf} | wc -l ; \
     else
         echo "No non-empty OpG GTFs found" >&2
@@ -54,8 +56,9 @@ rule run_operon_annotation:
         if [ -s "$i" ]; then echo "$i" ; fi
     done) \
     > annotations/{wildcards.specie}/List_merge_OPRNs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt
+    echo "Perfroming merge of OPRNs"
     if [ -s annotations/{wildcards.specie}/List_merge_OPRNs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt ] ; then
-        stringtie --merge -l OPRN -f 0 -F 0 -T 0 -c 0 -m 200 -g 0 -o {output.operongtf} annotations/{wildcards.specie}/List_merge_OPRNs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt ; \
+        stringtie --merge -l OPRN -f 0 -F 0 -T 0 -c 0 -m 200 -g {params.g_param} -o {output.operongtf} annotations/{wildcards.specie}/List_merge_OPRNs.{wildcards.specie}guide{wildcards.ref}v{wildcards.intron}gambat{wildcards.threshold}.txt ; \
     else
         echo "No non-empty OPRN GTFs found" >&2
         touch ./{output.operongtf}
@@ -64,6 +67,7 @@ rule run_operon_annotation:
     cat {output.operongtf} {output.opgenesgtf} > {params.name}.tmp.gtf ; \
     gffread --sort-alpha -F -T -o {output.merge} {params.name}.tmp.gtf ; rm {params.name}.tmp.gtf
 
+    echo "Perfroming validation of merged OpG-OPRN GTF"
     if [ -s {output.merge} ] ; then
         python {params.snakedir}/scripts/operon_validation.py -f {output.merge} --log {log.logOPRN}
         grep 'StringTie	transcript' {output.opgenesgtfCLEAN} | wc -l 

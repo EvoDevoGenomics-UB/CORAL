@@ -6,6 +6,7 @@ NAME=$(basename $2 .gtf)
 
 DIR=$3
 DIRSCRIPTS=$5
+OPTIONS=$6
 
 perl -I$DIRSCRIPTS/PerlLib $DIRSCRIPTS/TD2_util/gtf_genome_to_cdna_fasta.pl $GTF $GENOME > ${DIR}$NAME.fasta 
 
@@ -13,7 +14,7 @@ perl -I$DIRSCRIPTS/PerlLib $DIRSCRIPTS/TD2_util/gtf_to_alignment_gff3.pl $GTF > 
 
 mkdir -p ${DIR}$NAME
 
-TD2.LongOrfs -t ${DIR}$NAME.fasta -O ${DIR}$NAME --complete-orfs-only
+TD2.LongOrfs -t ${DIR}$NAME.fasta -O ${DIR}$NAME ${OPTIONS}
 #hmmsearch --cpu 8 -E 1e-10 --domtblout ${NAME}.pfam.domtblout ${DIR}/Pfam-A.hmm $NAME/longest_orfs.pep
 
 for i in $4 ; do 
