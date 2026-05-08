@@ -155,14 +155,42 @@ operon_counts_def = Counter(operon for operon, _ in prefinal_pairs)
 # Keep only operons that contain **two or more** transcripts
 good_operons = {operon for operon, count in operon_counts_def.items() if count > 1}
 
-def get_exonic_length(db, transcript):
-    exons = db.children(transcript, featuretype='exon', order_by='start')
-    total_ex_lenght = sum((exon.end - exon.start + 1) for exon in exons)
-    return total_ex_lenght
+def merged_exon_length(db, transcripts):
+    exons = []
+    # Recoger todos los exones
+    for transcript in transcripts:
+        for exon in db.children(transcript, featuretype='exon', order_by='start'):
+            exons.append((exon.start, exon.end))
 
-def get_length(transcript):
-    start = transcript.start
-    end = transcript.end
+    if not exons:
+        return 0
+
+    # Ordenar por inicio
+    exons.sort(key=lambda x: x[0])
+
+    # Fusionar solapamientos
+    merged = [exons[0]]
+
+    for current_start, current_end in exons[1:]:
+        last_start, last_end = merged[-1]
+
+        # Si se solapan
+        if current_start <= last_end:
+            merged[-1] = (
+                last_start,
+                max(last_end, current_end)
+            )
+        else:
+            merged.append((current_start, current_end))
+
+    # Calcular longitud total
+    total_length = sum(end - start + 1 for start, end in merged)
+
+    return total_length
+
+def max_length(transcripts):
+    start = min(t.start for t in transcripts)
+    end = max(t.end for t in transcripts)
     lenght = end - start +1
     return lenght
 
@@ -183,15 +211,12 @@ for operon_id, gene_ids in operon_to_transcripts.items():
     if not operon_transcripts:
         continue
 
-    # Assuming one transcript per operon (adjust if needed)
     max_operon_len = 0
     max_operon_exon_len = 0
-    for operon_trans in operon_transcripts:
-        operon_len = get_length(operon_trans)
-        operon_len_exons = get_exonic_length(db,operon_trans)
-        if operon_len > max_operon_len:
-            max_operon_len = operon_len
-            max_operon_exon_len = operon_len_exons
+    # Longitud total del operón
+    max_operon_len = max_length(operon_transcripts)
+    # Longitud exónica NO redundante
+    max_operon_exon_len = merged_exon_length(db, operon_transcripts)
 
     # Sum lengths of contained transcripts
     total_len = 0
@@ -202,8 +227,8 @@ for operon_id, gene_ids in operon_to_transcripts.items():
             t for t in db.features_of_type("transcript")
             if t.attributes['gene_id'][0] == gene_id
         ]
-        total_len += get_length(sub_transcripts[0])
-        total_ex_len += get_exonic_length(db,sub_transcripts[0])
+        total_len += max_length(sub_transcripts)
+        total_ex_len += merged_exon_length(db,sub_transcripts)
     
     tolerance = (50 * len(gene_ids))
     if (total_len + tolerance) >= (max_operon_len * 0.6) or (max_operon_exon_len*0.6 < total_ex_len < max_operon_exon_len + tolerance):
