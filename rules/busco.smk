@@ -3,9 +3,9 @@ rule run_longest_trans_filter:
     input:
         gtf=rules.run_recover_coverage.output.gtfFinal2
     output:
-        filtergtf="annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs_longest_trans_only.gtf"
+        filtergtf="annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.counts_longest_trans_only.gtf"
     log:
-        "logs/{specie}/log_long_trans_filter_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.log"
+        "logs/{specie}/log_long_trans_filter_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.counts.log"
     conda:
         env_file
     params:
