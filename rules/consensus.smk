@@ -254,9 +254,9 @@ rule run_recover_coverage:
         env_file
     shell:
         """ (
-    stringtie -G {input.gtf2} -e -o {output.gtfFinal2} {input.bams}
+    stringtie -L -R -G {input.gtf2} -e -o {output.gtfFinal2} {input.bams}
     if [ -s {input.gtf} ] ; then
-        stringtie -G {input.gtf} -e -o {output.gtfFinal} {input.bams}
+        stringtie -L -R -G {input.gtf} -e -o {output.gtfFinal} {input.bams}
     else
         touch {output.gtfFinal}
     fi ) 2> {log}

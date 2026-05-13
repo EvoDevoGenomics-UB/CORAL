@@ -71,11 +71,6 @@ db_name: "UniProtKB/Swiss-Prot"
 db_alias: "swissprot"
 TD2options: "--complete-orfs-only"
 
-#TransDecoder2 and mmseqs2 paramters:
-run_TransDecoder: True
-db_name: "UniProtKB/Swiss-Prot"
-db_alias: "swissprot"
-
 # BUSCO options
 lineages: metazoa_odb10
 

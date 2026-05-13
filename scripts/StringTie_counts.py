@@ -86,7 +86,7 @@ with open(list_path, "w") as f_list:
         if not out_gtf.exists():
             logging.info(f"Running stringtie for sample {sample}")
             subprocess.run([
-                "stringtie", "-eB", "-G", str(gtf_file),
+                "stringtie", "-L", "-R", "-eB", "-G", str(gtf_file),
                 "-p", str(threads), "-o", str(out_gtf), str(bam)
             ], check=True)
         else:
