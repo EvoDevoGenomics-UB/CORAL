@@ -1,7 +1,7 @@
 ##Busco-related rules
 rule run_longest_trans_filter:
     input:
-        gtf=rules.run_final_annotation.output.noOPRNs
+        gtf=rules.run_recover_coverage.output.gtfFinal2
     output:
         filtergtf="annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs_longest_trans_only.gtf"
     log:
