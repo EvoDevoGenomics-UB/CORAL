@@ -166,13 +166,13 @@ def get_final_output():
             intron=config["minimap2_max_intron"],
             threshold=config["operon_threshold"]
         ),
-        expand("annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.counts_longest_trans_only.gtf",
+        expand("annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.counts.gtf",
             specie=config["specie"],
             ref=config["stringtie_guide_opts"],
             intron=config["minimap2_max_intron"],
             threshold=config["operon_threshold"]
         ),
-        expand("annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.counts.gtf",
+        expand("annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.counts_longest_trans_only.gtf",
             specie=config["specie"],
             ref=config["stringtie_guide_opts"],
             intron=config["minimap2_max_intron"],

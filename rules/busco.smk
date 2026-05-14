@@ -1,7 +1,7 @@
 ##Busco-related rules
 rule run_longest_trans_filter:
     input:
-        gtf=rules.run_recover_coverage.output.gtfFinal2
+        gtf=ancient(rules.run_recover_coverage.output.gtfFinal)
     output:
         filtergtf="annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.counts_longest_trans_only.gtf"
     log:
@@ -82,7 +82,7 @@ rule run_busco_analyses:
         outdir=directory(
             "busco_analysis/{specie}/BUSCO_trans_{specie}_{filename}"
         ),
-        summary=expand("busco_analysis/{{specie}}/BUSCO_trans_{{specie}}_{{filename}}/short_summary.specific.{lin}.{{filename}}.txt", lin=config["lineages"])
+        summary=expand("busco_analysis/{{specie}}/BUSCO_trans_{{specie}}_{{filename}}/short_summary.specific.{lin}.BUSCO_trans_{{specie}}_{{filename}}.txt", lin=config["lineages"])
     log:
         "logs/{specie}/log_BUSCO_trans_{specie}_{filename}.log"
     conda:
