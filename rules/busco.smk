@@ -36,7 +36,12 @@ rule run_obtaining_fasta:
     (mkdir -p busco_analysis
     gffread -g {input.genome} -w {output.fasta} {input.gtf}
     gffread -g {input.genome} -w {output.fasta_noOPRNs} {input.gtf_noOPRNs}
-    gffread -g {input.genome} -w {output.fasta_andOPRNs} {input.gtf_andORPNs} ) 2> {log}
+    if [ -s {input.gtf_andORPNs} ] ; then 
+        gffread -g {input.genome} -w {output.fasta_andOPRNs} {input.gtf_andORPNs}
+    else
+     touch {output.fasta_andOPRNs}
+     echo "  Fasta for CLEAN-andOPRNs not created because of lack of OPRNs..."
+    fi ) 2> {log}
     """
 
 rule run_fasta_reference_annot:
@@ -91,8 +96,12 @@ rule run_busco_analyses:
         lineage=config["lineages"]
     shell:
         """ (
-        busco -i {input.fasta} -l {input.lin_dir} -o {output.outdir} -m transcriptome -f
-         ) 2> {log}
+        if [ -s {input.fasta} ] ; then 
+            busco -i {input.fasta} -l {input.lin_dir} -o {output.outdir} -m transcriptome
+        else
+            mkdir -p {output.outdir}
+            touch {output.summary}
+        fi ) 2> {log}
     """
 
 
@@ -112,7 +121,7 @@ rule busco_plot:
             "busco_analysis/{specie}/BUSCO_results_all_summaries_{specie}_guide{ref}_v{intron}_gambat{threshold}"
         )
     log:
-        "logs/{specie}/log_busco_polt_BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
+        "logs/{specie}/log_busco_plot_BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
     conda:
         env_file
     params:
