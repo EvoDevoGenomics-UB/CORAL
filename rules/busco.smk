@@ -97,7 +97,7 @@ rule run_busco_analyses:
     shell:
         """ (
         if [ -s {input.fasta} ] ; then 
-            busco -i {input.fasta} -l {input.lin_dir} -o {output.outdir} -m transcriptome
+            busco -i {input.fasta} -l {input.lin_dir} -o {output.outdir} -m transcriptome -f
         else
             mkdir -p {output.outdir}
             touch {output.summary}
