@@ -52,7 +52,7 @@ rule run_TransDecoder:
     "TD2_results/{wildcards.specie}/" \
        {input.db_alias} \
        "{params.scriptsDIR}" \
-       {params.TD2options} \
+       "{params.TD2options}" \
     ) 2>&1 | tee {log.log1}
 
     (mkdir -p Gffcompare_results
