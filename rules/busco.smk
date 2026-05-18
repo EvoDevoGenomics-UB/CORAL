@@ -1,11 +1,11 @@
 ##Busco-related rules
 rule run_longest_trans_filter:
     input:
-        gtf=rules.run_final_annotation.output.noOPRNs
+        gtf=ancient(rules.run_recover_coverage.output.gtfFinal)
     output:
-        filtergtf="annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs_longest_trans_only.gtf"
+        filtergtf="annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.counts_longest_trans_only.gtf"
     log:
-        "logs/{specie}/log_long_trans_filter_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.log"
+        "logs/{specie}/log_long_trans_filter_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.counts.log"
     conda:
         env_file
     params:
@@ -24,9 +24,9 @@ rule run_obtaining_fasta:
         gtf_noOPRNs=rules.run_final_annotation.output.noOPRNs,
         gtf_andORPNs=rules.run_final_annotation.output.andOPRNs
     output:
-        fasta="busco_analysis/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs_longest_trans_only.fasta",
-        fasta_noOPRNs="busco_analysis/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.fasta",
-        fasta_andOPRNs="busco_analysis/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-andOPRNs.fasta"
+        fasta="busco_analysis/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNs_longest_trans_only.fasta",
+        fasta_noOPRNs="busco_analysis/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNs.fasta",
+        fasta_andOPRNs="busco_analysis/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_andOPRNs.fasta"
     log:
         "logs/{specie}/log_obtaining_fasta_GTFs_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
     conda:
@@ -36,9 +36,30 @@ rule run_obtaining_fasta:
     (mkdir -p busco_analysis
     gffread -g {input.genome} -w {output.fasta} {input.gtf}
     gffread -g {input.genome} -w {output.fasta_noOPRNs} {input.gtf_noOPRNs}
-    gffread -g {input.genome} -w {output.fasta_andOPRNs} {input.gtf_andORPNs} ) 2> {log}
+    if [ -s {input.gtf_andORPNs} ] ; then 
+        gffread -g {input.genome} -w {output.fasta_andOPRNs} {input.gtf_andORPNs}
+    else
+     touch {output.fasta_andOPRNs}
+     echo "  Fasta for CLEAN-andOPRNs not created because of lack of OPRNs..."
+    fi ) 2> {log}
     """
 
+rule run_fasta_reference_annot:
+    input:
+        genome=ancient(rules.check_genome_format.output.genome),
+        ref_annot=REF
+    output:
+        fasta="busco_analysis/{specie}/{specie}_LRannot_REF.fasta"
+    log:
+        "logs/{specie}/log_fasta_reference_annot_{specie}.log"
+    conda:
+        env_file
+    shell:
+        """ (
+        mkdir -p busco_analysis
+        gffread -g {input.genome} -w {output.fasta} {input.ref_annot}
+        ) 2>&1 | tee {log}
+    """
 
 rule busco_download_lineage:
     output:
@@ -61,56 +82,26 @@ rule busco_download_lineage:
 rule run_busco_analyses:
     input:
         lin_dir=ancient(rules.busco_download_lineage.output.lin_dir),
-        fa_longtrans=rules.run_obtaining_fasta.output.fasta,
-        fa_noOPRNs=rules.run_obtaining_fasta.output.fasta_noOPRNs,
-        fa_andOPRNs=rules.run_obtaining_fasta.output.fasta_andOPRNs
+        fasta="busco_analysis/{specie}/{specie}_{filename}.fasta"
     output:
-        out_longtrans=directory(
-            "busco_analysis/{specie}/BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNs_longest_trans_only"
+        outdir=directory(
+            "busco_analysis/{specie}/BUSCO_trans_{specie}_{filename}"
         ),
-        out_noOPRNs=directory(
-            "busco_analysis/{specie}/BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_noOPRNs"
-        ),
-        out_andOPRNs=directory(
-            "busco_analysis/{specie}/BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_andOPRNs"
-        )
+        summary=expand("busco_analysis/{{specie}}/BUSCO_trans_{{specie}}_{{filename}}/short_summary.specific.{lin}.BUSCO_trans_{{specie}}_{{filename}}.txt", lin=config["lineages"])
     log:
-        "logs/{specie}/log_BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
+        "logs/{specie}/log_BUSCO_trans_{specie}_{filename}.log"
     conda:
         env_file
     params:
         lineage=config["lineages"]
     shell:
         """ (
-        busco -i {input.fa_longtrans} -l {input.lin_dir} -o {output.out_longtrans} -m transcriptome
-        busco -i {input.fa_noOPRNs} -l {input.lin_dir} -o {output.out_noOPRNs} -m transcriptome
-        if [ -s {input.fa_andOPRNs} ] ; then
-            busco -i {input.fa_andOPRNs} -l {input.lin_dir} -o {output.out_andOPRNs} -m transcriptome
+        if [ -s {input.fasta} ] ; then 
+            busco -i {input.fasta} -l {input.lin_dir} -o {output.outdir} -m transcriptome -f
         else
-            mkdir {output.out_andOPRNs}
+            mkdir -p {output.outdir}
+            touch {output.summary}
         fi ) 2> {log}
-    """
-
-
-rule run_busco_reference_annot:
-    input:
-        lin_dir=ancient(rules.busco_download_lineage.output.lin_dir),
-        genome=ancient(rules.check_genome_format.output.genome),
-        ref_annot=REF
-    output:
-        fasta="busco_analysis/{specie}/{specie}_LRannot_REF.fasta",
-        out_ref=directory("busco_analysis/{specie}/BUSCO_trans_{specie}_LRannot_REF")
-    log:
-        "logs/{specie}/log_busco_reference_annot_{specie}.log"
-    conda:
-        env_file
-    params:
-        lineage=config["lineages"]
-    shell:
-        """ (
-        mkdir -p busco_analysis
-        gffread -g {input.genome} -w {output.fasta} {input.ref_annot}
-        busco -i {output.fasta} -l {input.lin_dir} -o {output.out_ref} -m transcriptome ) 2>&1 | tee {log}
     """
 
 
@@ -130,7 +121,7 @@ rule busco_plot:
             "busco_analysis/{specie}/BUSCO_results_all_summaries_{specie}_guide{ref}_v{intron}_gambat{threshold}"
         )
     log:
-        "logs/{specie}/log_busco_polt_BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
+        "logs/{specie}/log_busco_plot_BUSCO_trans_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
     conda:
         env_file
     params:

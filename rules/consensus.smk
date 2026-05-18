@@ -235,8 +235,7 @@ rule run_final_annotation:
 # Obtaining coverage of final annotation
 rule run_recover_coverage:
     input:
-        gtf=rules.run_final_annotation.output.andOPRNs,
-        gtf2=rules.run_final_annotation.output.noOPRNs,
+        gtf=rules.run_final_annotation.output.noOPRNs,
         bams=ancient(
             expand(
                 "alignments/{specie}/{specie}_{sample}_reads_aln_v{intron}.sorted.bam",
@@ -246,18 +245,13 @@ rule run_recover_coverage:
             )
         )
     output:
-        gtfFinal="annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-andOPRNs.counts.gtf",
-        gtfFinal2="annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.counts.gtf"
+        gtfFinal="annotations/{specie}/{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}_StringtieMerge.clean-noOPRNs.counts.gtf"
     log:
         "logs/{specie}/log_recover_coverage_{specie}_LRannot_guide{ref}_v{intron}_gambat{threshold}.log"
     conda:
         env_file
     shell:
         """ (
-    stringtie -G {input.gtf2} -e -o {output.gtfFinal2} {input.bams}
-    if [ -s {input.gtf} ] ; then
-        stringtie -G {input.gtf} -e -o {output.gtfFinal} {input.bams}
-    else
-        touch {output.gtfFinal}
-    fi ) 2> {log}
+    stringtie -L -G {input.gtf} -e -o {output.gtfFinal} {input.bams}
+     ) 2> {log}
     """

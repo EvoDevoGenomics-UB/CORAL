@@ -202,6 +202,7 @@ for operon, gene in prefinal_pairs:
 valid_operons = set()
 invalid_operons = set()
 
+print(f"Performing length check on {len(operon_to_transcripts)} OPRNs...")
 for operon_id, gene_ids in operon_to_transcripts.items():
     # Get operon transcript(s)
     operon_transcripts = [
